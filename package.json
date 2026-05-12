@@ -1,0 +1,61 @@
+{
+  "name": "bundlesocial-mcp",
+  "version": "1.0.0",
+  "mcpName": "io.github.bundleglobal/bundlesocial-mcp",
+  "description": "Model Context Protocol server for the bundle.social social-media API — post to 14+ platforms from Claude, Cursor and other MCP clients.",
+  "keywords": [
+    "bundle.social",
+    "bundlesocial",
+    "mcp",
+    "model context protocol",
+    "social media",
+    "api",
+    "agents",
+    "claude",
+    "cursor"
+  ],
+  "author": "bundle.global",
+  "license": "MIT",
+  "homepage": "https://github.com/bundleglobal/bundlesocial-mcp#readme",
+  "bugs": {
+    "url": "https://github.com/bundleglobal/bundlesocial-mcp/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/bundleglobal/bundlesocial-mcp.git"
+  },
+  "type": "module",
+  "bin": {
+    "bundlesocial-mcp": "./dist/index.js"
+  },
+  "files": [
+    "dist/**",
+    "server.json",
+    "README.md",
+    "CHANGELOG.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "typecheck": "tsc --noEmit",
+    "start": "node dist/index.js",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "prepublishOnly": "npm run build"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.12.0",
+    "bundlesocial": "^2.47.0",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.0",
+    "tsup": "^8.2.4",
+    "typescript": "^5.5.4",
+    "vitest": "^2.0.5"
+  }
+}

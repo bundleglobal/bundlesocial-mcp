@@ -1,0 +1,41 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-09-29/server.schema.json",
+  "name": "io.github.bundleglobal/bundlesocial-mcp",
+  "description": "Post and schedule content to 14+ social platforms (X, Instagram, TikTok, LinkedIn, YouTube, Facebook, Pinterest, Reddit, Threads, Bluesky, Mastodon, Discord, Slack, Google Business Profile) via the bundle.social API.",
+  "version": "1.0.0",
+  "repository": {
+    "url": "https://github.com/bundleglobal/bundlesocial-mcp",
+    "source": "github"
+  },
+  "websiteUrl": "https://bundle.social",
+  "packages": [
+    {
+      "registryType": "npm",
+      "registryBaseUrl": "https://registry.npmjs.org",
+      "identifier": "bundlesocial-mcp",
+      "version": "1.0.0",
+      "transport": { "type": "stdio" },
+      "environmentVariables": [
+        {
+          "name": "BUNDLESOCIAL_API_KEY",
+          "description": "bundle.social API key. Create one at https://bundle.social/dashboard/organization/api-keys",
+          "isRequired": true,
+          "isSecret": true
+        },
+        {
+          "name": "BUNDLESOCIAL_TEAM_ID",
+          "description": "Default team id. Optional — needed only if your organization has more than one team.",
+          "isRequired": false,
+          "isSecret": false
+        },
+        {
+          "name": "BUNDLESOCIAL_API_URL",
+          "description": "API base URL (default https://api.bundle.social). For self-hosted/staging targets.",
+          "isRequired": false,
+          "isSecret": false,
+          "default": "https://api.bundle.social"
+        }
+      ]
+    }
+  ]
+}
