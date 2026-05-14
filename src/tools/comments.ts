@@ -1,6 +1,6 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import type { CommentCreateData, CommentGetListData, CommentImportCreateData } from "bundlesocial";
+import type { CommentCreateData, CommentGetListData, CommentImportCreateData, CommentUpdateData } from "bundlesocial";
 import { type ServerContext, resolveTeamId } from "../client";
 import { McpToolError, jsonResult } from "../errors";
 import { COMMENT_PLATFORMS, type CommentPlatform, isCommentPlatform, normalizePlatform } from "../platforms";
@@ -12,6 +12,7 @@ type CommentImportPlatform = NonNullable<CommentImportCreateData["requestBody"]>
 const commentImportStatusSchema = z.enum(["PENDING", "FETCHING", "RETRYING", "COMPLETED", "SKIPPED", "FAILED", "RATE_LIMITED"]);
 
 type CommentCreateBody = NonNullable<CommentCreateData["requestBody"]>;
+type CommentUpdateBody = NonNullable<CommentUpdateData["requestBody"]>;
 
 const teamIdSchema = z
   .string()
@@ -159,6 +160,66 @@ export function registerCommentTools(server: McpServer, ctx: ServerContext): voi
       annotations: { destructiveHint: true, openWorldHint: true },
     },
     async ({ id }) => jsonResult(await ctx.client.comment.commentDelete({ id })),
+  );
+
+  registerTool(
+    server,
+    "update_comment",
+    {
+      title: "Update a comment",
+      description:
+        "Update an existing comment by id — change its title, scheduled date, status (DRAFT/SCHEDULED), targeted platforms and/or per-platform text. Only the fields you pass are changed. Use `data` for the full per-platform object, or `content` + `platforms` for a same-text-everywhere change.",
+      inputSchema: {
+        id: z.string().min(1).describe("Comment id."),
+        title: z.string().optional().describe("New title."),
+        date: z.string().optional().describe("New scheduled date, ISO 8601."),
+        status: z.enum(["DRAFT", "SCHEDULED"]).optional().describe("New status."),
+        content: z.string().optional().describe("New comment text, applied to every platform in `platforms`."),
+        platforms: z
+          .array(z.string().min(1))
+          .optional()
+          .describe("Comment-capable platform name/alias. Required when changing `content` without supplying `data`."),
+        data: z
+          .record(z.string(), z.unknown())
+          .optional()
+          .describe('Advanced: the full comment `data` object keyed by platform, e.g. {"LINKEDIN":{"text":"new"}}.'),
+      },
+      annotations: { openWorldHint: true },
+    },
+    async ({ id, title, date, status, content, platforms, data }) => {
+      const normalized = assertCommentPlatforms((platforms ?? []).map(normalizePlatform));
+      const wantsDataChange = content !== undefined || data !== undefined;
+
+      const requestBody: CommentUpdateBody = {};
+      if (title !== undefined) requestBody.title = title;
+      if (date) {
+        const parsed = new Date(date);
+        if (Number.isNaN(parsed.getTime())) {
+          throw new McpToolError("INVALID_DATE", `date is not a valid ISO 8601 date/time: "${date}". Example: 2026-06-01T09:00:00Z`);
+        }
+        requestBody.postDate = parsed.toISOString();
+      }
+      if (status) requestBody.status = status;
+      if (normalized.length > 0) requestBody.socialAccountTypes = normalized as CommentUpdateBody["socialAccountTypes"];
+      if (wantsDataChange) {
+        if (data) {
+          requestBody.data = data as unknown as CommentUpdateBody["data"];
+        } else {
+          if (normalized.length === 0) {
+            throw new McpToolError("NO_TARGET", "Pass `platforms` when changing `content` (the per-platform comment text needs to know which platforms to target).");
+          }
+          const perPlatform = Object.fromEntries(normalized.map((platform) => [platform, { text: content as string }]));
+          requestBody.data = perPlatform as unknown as CommentUpdateBody["data"];
+        }
+      }
+      if (Object.keys(requestBody).length === 0) {
+        throw new McpToolError(
+          "NOTHING_TO_UPDATE",
+          "Nothing to update — pass at least one of title, date, status, content (+ platforms), data.",
+        );
+      }
+      return jsonResult(await ctx.client.comment.commentUpdate({ id, requestBody }));
+    },
   );
 
   // --- comment imports (fetch incoming comments on a published post) ---------

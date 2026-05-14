@@ -223,6 +223,7 @@ describe("tool registry", () => {
         "list_comments",
         "get_comment",
         "delete_comment",
+        "update_comment",
         // comment imports
         "create_comment_import",
         "list_comment_imports",
