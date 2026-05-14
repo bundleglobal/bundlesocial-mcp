@@ -30,9 +30,23 @@ function isUrl(value: string): boolean {
   return /^https?:\/\//i.test(value.trim());
 }
 
+/** Files larger than this must use the chunked/large-upload flow (init + signed PUT + finalize). */
+export const LARGE_UPLOAD_THRESHOLD_BYTES = 90 * 1024 * 1024;
+
+/** MIME types accepted by the large-upload (init) endpoint. */
+const LARGE_UPLOAD_MIME_BY_EXT: Record<string, "image/jpg" | "image/jpeg" | "image/png" | "image/gif" | "video/mp4" | "application/pdf"> = {
+  ".jpg": "image/jpg",
+  ".jpeg": "image/jpeg",
+  ".png": "image/png",
+  ".gif": "image/gif",
+  ".mp4": "video/mp4",
+  ".pdf": "application/pdf",
+};
+
 /**
  * Upload one media reference (a public URL, or — in stdio mode — a local file
- * path) and return the resulting upload object.
+ * path) and return the resulting upload object. Local files larger than ~90 MB
+ * are uploaded via the large-upload flow automatically.
  */
 export async function uploadMediaRef(client: Bundlesocial, teamId: string, ref: string) {
   if (isUrl(ref)) {
@@ -49,9 +63,34 @@ export async function uploadMediaRef(client: Bundlesocial, teamId: string, ref: 
       { path: absolutePath },
     );
   }
+  if (buffer.byteLength > LARGE_UPLOAD_THRESHOLD_BYTES) {
+    return uploadLargeMedia(client, teamId, absolutePath, buffer);
+  }
   const mime = MIME_BY_EXT[path.extname(absolutePath).toLowerCase()] ?? "application/octet-stream";
   const file = new File([buffer], path.basename(absolutePath), { type: mime });
   return client.upload.uploadCreate({ formData: { teamId, file } });
+}
+
+/**
+ * Upload a (large) local file via the init → signed PUT → finalize flow.
+ * Only `image/jpg|jpeg|png|gif`, `video/mp4` and `application/pdf` are supported.
+ */
+async function uploadLargeMedia(client: Bundlesocial, teamId: string, absolutePath: string, buffer: Buffer) {
+  const ext = path.extname(absolutePath).toLowerCase();
+  const mimeType = LARGE_UPLOAD_MIME_BY_EXT[ext];
+  if (!mimeType) {
+    throw new McpToolError(
+      "LARGE_UPLOAD_UNSUPPORTED_TYPE",
+      `Large uploads (>90 MB) only support .jpg, .jpeg, .png, .gif, .mp4 and .pdf — got "${ext || "no extension"}".`,
+      { path: absolutePath },
+    );
+  }
+  const init = await client.upload.uploadInitLargeUpload({ requestBody: { teamId, fileName: path.basename(absolutePath), mimeType } });
+  const put = await fetch(init.url, { method: "PUT", headers: { "content-type": mimeType }, body: new Uint8Array(buffer) });
+  if (!put.ok) {
+    throw new McpToolError("LARGE_UPLOAD_FAILED", `Uploading the file to storage failed (HTTP ${put.status}).`, { status: put.status });
+  }
+  return client.upload.uploadFinalizeLargeUpload({ requestBody: { teamId, path: init.path } });
 }
 
 export async function uploadMediaRefs(client: Bundlesocial, teamId: string, refs: string[]): Promise<string[]> {

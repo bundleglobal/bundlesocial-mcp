@@ -1,7 +1,7 @@
 {
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-09-29/server.schema.json",
   "name": "io.github.bundleglobal/bundlesocial-mcp",
-  "description": "Post and schedule content to 14+ social platforms (X, Instagram, TikTok, LinkedIn, YouTube, Facebook, Pinterest, Reddit, Threads, Bluesky, Mastodon, Discord, Slack, Google Business Profile) via the bundle.social API.",
+  "description": "Post, schedule, comment on and analyze content across 14+ social platforms (X, Instagram, TikTok, LinkedIn, YouTube, Facebook, Pinterest, Reddit, Threads, Bluesky, Mastodon, Discord, Slack, Google Business Profile) via the bundle.social API — plus team & integration management, media uploads, and post-history/comment/CSV imports.",
   "version": "1.0.0",
   "repository": {
     "url": "https://github.com/bundleglobal/bundlesocial-mcp",

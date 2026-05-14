@@ -19,7 +19,7 @@ export function createServer(options: CreateServerOptions): McpServer {
     {
       capabilities: { tools: {} },
       instructions:
-        "Tools for posting to and reading from 14+ social platforms via the bundle.social API. Start with list_integrations to see connected accounts and their ids. create_post / schedule_post target platforms by name (x, tiktok, instagram, youtube, facebook, threads, linkedin, pinterest, reddit, mastodon, discord, slack, gbp) or by integration id; put platform-required fields (Reddit `sr`, Pinterest `boardName`, TikTok `privacy`, YouTube `madeForKids`/`privacyStatus`) under `platformSettings` keyed by platform. Errors come back as { error: { code, message, details } } with isError: true.",
+        "Tools for the bundle.social API: posting/scheduling to 14+ social platforms, comments, media uploads, analytics, team & integration management, and bulk/history imports (post-history, comment, CSV). Run check_setup first to verify the API key, org access and team. Use list_integrations to see connected accounts and their ids. create_post / schedule_post target platforms by name (x, tiktok, instagram, youtube, facebook, threads, linkedin, pinterest, reddit, mastodon, discord, slack, gbp) or by integration id; put platform-required fields (Reddit `sr`, Pinterest `boardName`, TikTok `privacy`, YouTube `madeForKids`/`privacyStatus`) under `platformSettings` keyed by platform — per-platform fields are documented at https://docs.bundle.social/api-reference/platform-parameters. Team-scoped tools take an optional `teamId` (resolved automatically when the org has one team or BUNDLESOCIAL_TEAM_ID is set). Errors come back as { error: { code, message, details } } with isError: true.",
     },
   );
 

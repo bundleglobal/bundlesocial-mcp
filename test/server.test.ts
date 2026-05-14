@@ -11,13 +11,34 @@ import { createServer } from "../src/server";
 
 const mocks = vi.hoisted(() => {
   const client = {
+    app: { appGetHealth: vi.fn() },
     organization: {
       organizationGetOrganization: vi.fn(),
       organizationGetPostsUsage: vi.fn(),
       organizationGetCommentsUsage: vi.fn(),
       organizationGetUploadsUsage: vi.fn(),
+      organizationGetImportsUsage: vi.fn(),
     },
-    team: { teamGetTeam: vi.fn() },
+    team: {
+      teamGetTeam: vi.fn(),
+      teamGetList: vi.fn(),
+      teamCreateTeam: vi.fn(),
+      teamUpdateTeam: vi.fn(),
+      teamDeleteTeam: vi.fn(),
+    },
+    socialAccount: {
+      socialAccountConnect: vi.fn(),
+      socialAccountDisconnect: vi.fn(),
+      socialAccountSetChannel: vi.fn(),
+      socialAccountUnsetChannel: vi.fn(),
+      socialAccountRefreshChannels: vi.fn(),
+      socialAccountCreatePortalLink: vi.fn(),
+      socialAccountConnectionCheck: vi.fn(),
+      socialAccountProfileRefresh: vi.fn(),
+      socialAccountGetByType: vi.fn(),
+      socialAccountCopy: vi.fn(),
+      socialAccountGetAccountsToDelete: vi.fn(),
+    },
     post: {
       postCreate: vi.fn(),
       postGetList: vi.fn(),
@@ -31,12 +52,45 @@ const mocks = vi.hoisted(() => {
       commentGetList: vi.fn(),
       commentGet: vi.fn(),
       commentDelete: vi.fn(),
+      commentImportCreate: vi.fn(),
+      commentImportGetList: vi.fn(),
+      commentImportGetById: vi.fn(),
+      commentImportGetFetchedComments: vi.fn(),
     },
     analytics: {
       analyticsGetPostAnalytics: vi.fn(),
+      analyticsGetPostAnalyticsRaw: vi.fn(),
       analyticsGetSocialAccountAnalytics: vi.fn(),
+      analyticsGetSocialAccountAnalyticsRaw: vi.fn(),
+      analyticsGetBulkPostAnalytics: vi.fn(),
+      analyticsForcePostAnalytics: vi.fn(),
+      analyticsForceSocialAccountAnalytics: vi.fn(),
     },
-    upload: { uploadCreate: vi.fn(), uploadCreateFromUrl: vi.fn() },
+    upload: {
+      uploadCreate: vi.fn(),
+      uploadCreateFromUrl: vi.fn(),
+      uploadGetList: vi.fn(),
+      uploadGet: vi.fn(),
+      uploadDelete: vi.fn(),
+      uploadDeleteMany: vi.fn(),
+      uploadInitLargeUpload: vi.fn(),
+      uploadFinalizeLargeUpload: vi.fn(),
+    },
+    postImport: {
+      postImportCreate: vi.fn(),
+      postImportGetStatus: vi.fn(),
+      postImportGetById: vi.fn(),
+      postImportGetImportedPosts: vi.fn(),
+      postImportDeleteImportedPosts: vi.fn(),
+      postImportRetryImport: vi.fn(),
+    },
+    postCsv: {
+      postCsvCreate: vi.fn(),
+      postCsvGetList: vi.fn(),
+      postCsvGetById: vi.fn(),
+      postCsvGetStatus: vi.fn(),
+      postCsvGetRows: vi.fn(),
+    },
     misc: {
       miscRedditGetSubredditFlairs: vi.fn(),
       miscYoutubeGetVideoCategories: vi.fn(),
@@ -111,6 +165,7 @@ async function callTool(client: Client, name: string, args: Record<string, unkno
 
 beforeEach(() => {
   vi.clearAllMocks();
+  sdk.app.appGetHealth.mockResolvedValue({ status: "ok" });
   sdk.organization.organizationGetOrganization.mockResolvedValue(ORG);
   sdk.team.teamGetTeam.mockResolvedValue(TEAM);
 });
@@ -128,23 +183,78 @@ describe("tool registry", () => {
     const names = tools.map((tool) => tool.name).sort();
     expect(names).toEqual(
       [
-        "create_comment",
-        "create_post",
-        "delete_comment",
-        "delete_post",
-        "get_analytics_summary",
-        "get_comment",
-        "get_post",
-        "get_post_analytics",
-        "list_comments",
-        "list_integration_tools",
+        // diagnostics
+        "check_setup",
+        // organization
+        "get_organization",
+        "get_usage",
+        // teams
+        "list_teams",
+        "get_team",
+        "create_team",
+        "update_team",
+        "delete_team",
+        // integrations
         "list_integrations",
-        "list_posts",
-        "retry_post",
-        "schedule_post",
+        "connect_integration",
+        "disconnect_integration",
+        "set_integration_channel",
+        "unset_integration_channel",
+        "refresh_integration_channels",
+        "create_integration_portal_link",
+        "check_integration_connection",
+        "refresh_integration_profile",
+        "get_integration_by_type",
+        "copy_integration",
+        "list_integrations_to_delete",
+        // integration helper tools
+        "list_integration_tools",
         "trigger_integration_tool",
+        // posts
+        "create_post",
+        "schedule_post",
+        "list_posts",
+        "get_post",
+        "delete_post",
         "update_post",
+        "retry_post",
+        // comments
+        "create_comment",
+        "list_comments",
+        "get_comment",
+        "delete_comment",
+        // comment imports
+        "create_comment_import",
+        "list_comment_imports",
+        "get_comment_import",
+        "list_imported_comments",
+        // media
         "upload_media",
+        "list_media",
+        "get_media",
+        "delete_media",
+        "delete_media_many",
+        "init_large_upload",
+        "finalize_large_upload",
+        // post imports
+        "create_post_import",
+        "list_post_imports",
+        "get_post_import",
+        "list_imported_posts",
+        "delete_imported_posts",
+        "retry_post_import",
+        // post CSV
+        "create_post_csv_import",
+        "list_post_csv_imports",
+        "get_post_csv_import",
+        "get_post_csv_import_status",
+        "get_post_csv_import_rows",
+        // analytics
+        "get_post_analytics",
+        "get_account_analytics",
+        "get_bulk_post_analytics",
+        "refresh_analytics",
+        "get_analytics_summary",
       ].sort(),
     );
     for (const tool of tools) {
@@ -490,5 +600,327 @@ describe("integration tool helpers", () => {
     const { json, isError } = await callTool(client, "trigger_integration_tool", { method: "bogus:thing" });
     expect(isError).toBe(true);
     expect(json).toMatchObject({ error: { code: "UNKNOWN_INTEGRATION_TOOL" } });
+  });
+});
+
+// --- organization & teams ----------------------------------------------------
+
+describe("organization & teams", () => {
+  it("get_organization returns the organization", async () => {
+    const client = await connect();
+    const { json } = await callTool(client, "get_organization");
+    expect(sdk.organization.organizationGetOrganization).toHaveBeenCalled();
+    expect(json).toMatchObject({ id: "org_test" });
+  });
+
+  it("get_usage composes the four usage endpoints", async () => {
+    sdk.organization.organizationGetPostsUsage.mockResolvedValue({ used: 1, limit: 10, remaining: 9 });
+    sdk.organization.organizationGetCommentsUsage.mockResolvedValue({ used: 0, limit: 5, remaining: 5 });
+    sdk.organization.organizationGetUploadsUsage.mockResolvedValue({ used: 2, limit: 20, remaining: 18 });
+    sdk.organization.organizationGetImportsUsage.mockResolvedValue({ limitPerSocialAccount: 100, socialAccounts: [], pagination: { page: 1, pageSize: 20, total: 0, totalPages: 0 } });
+    const client = await connect();
+    const { json } = await callTool(client, "get_usage", { page: 1 });
+    expect(json).toMatchObject({ posts: { used: 1 }, comments: { remaining: 5 }, uploads: { used: 2 }, imports: { limitPerSocialAccount: 100 } });
+    expect(sdk.organization.organizationGetImportsUsage).toHaveBeenCalledWith(expect.objectContaining({ page: 1, teamId: "team_test" }));
+  });
+
+  it("list_teams / get_team / create_team / update_team / delete_team", async () => {
+    sdk.team.teamGetList.mockResolvedValue({ items: [{ id: "team_test" }], total: 1 });
+    sdk.team.teamCreateTeam.mockResolvedValue({ id: "team_new", name: "New" });
+    sdk.team.teamUpdateTeam.mockResolvedValue({ id: "team_test", name: "Renamed" });
+    sdk.team.teamDeleteTeam.mockResolvedValue({ id: "team_test" });
+    const client = await connect();
+
+    const { json: listJson } = await callTool(client, "list_teams", { limit: 5 });
+    expect(sdk.team.teamGetList).toHaveBeenCalledWith({ limit: 5, offset: null, search: null });
+    expect(listJson).toMatchObject({ items: [{ id: "team_test" }] });
+
+    await callTool(client, "get_team", { id: "team_test" });
+    expect(sdk.team.teamGetTeam).toHaveBeenCalledWith({ id: "team_test" });
+
+    await callTool(client, "create_team", { name: "New" });
+    expect(sdk.team.teamCreateTeam).toHaveBeenCalledWith({ requestBody: { name: "New", avatarUrl: null, copyTeamId: null } });
+
+    await callTool(client, "update_team", { id: "team_test", name: "Renamed" });
+    expect(sdk.team.teamUpdateTeam).toHaveBeenCalledWith({ id: "team_test", requestBody: { name: "Renamed" } });
+
+    const { json: delJson } = await callTool(client, "delete_team", { id: "team_test" });
+    expect(sdk.team.teamDeleteTeam).toHaveBeenCalledWith({ id: "team_test" });
+    expect(delJson).toMatchObject({ id: "team_test" });
+  });
+
+  it("update_team errors when nothing changes", async () => {
+    const client = await connect();
+    const { json, isError } = await callTool(client, "update_team", { id: "team_test" });
+    expect(isError).toBe(true);
+    expect(json).toMatchObject({ error: { code: "NOTHING_TO_UPDATE" } });
+  });
+});
+
+// --- social-account management ----------------------------------------------
+
+describe("integration management", () => {
+  it("connect_integration returns the OAuth url", async () => {
+    sdk.socialAccount.socialAccountConnect.mockResolvedValue({ url: "https://oauth.example/x" });
+    const client = await connect();
+    const { json } = await callTool(client, "connect_integration", { platform: "x", redirectUrl: "https://app.example/cb" });
+    expect(sdk.socialAccount.socialAccountConnect).toHaveBeenCalledWith({
+      requestBody: { type: "TWITTER", teamId: "team_test", redirectUrl: "https://app.example/cb" },
+    });
+    expect(json).toMatchObject({ url: "https://oauth.example/x" });
+  });
+
+  it("disconnect_integration passes the normalized platform", async () => {
+    sdk.socialAccount.socialAccountDisconnect.mockResolvedValue({ id: "acc_tw" });
+    const client = await connect();
+    await callTool(client, "disconnect_integration", { platform: "twitter" });
+    expect(sdk.socialAccount.socialAccountDisconnect).toHaveBeenCalledWith({ requestBody: { type: "TWITTER", teamId: "team_test" } });
+  });
+
+  it("set_integration_channel / get_integration_by_type", async () => {
+    sdk.socialAccount.socialAccountSetChannel.mockResolvedValue({ id: "acc_ig" });
+    sdk.socialAccount.socialAccountGetByType.mockResolvedValue({ id: "acc_ig", type: "INSTAGRAM" });
+    const client = await connect();
+    await callTool(client, "set_integration_channel", { platform: "instagram", channelId: "ch_1" });
+    expect(sdk.socialAccount.socialAccountSetChannel).toHaveBeenCalledWith({ requestBody: { type: "INSTAGRAM", teamId: "team_test", channelId: "ch_1" } });
+    const { json } = await callTool(client, "get_integration_by_type", { platform: "instagram" });
+    expect(sdk.socialAccount.socialAccountGetByType).toHaveBeenCalledWith({ teamId: "team_test", type: "INSTAGRAM" });
+    expect(json).toMatchObject({ id: "acc_ig" });
+  });
+
+  it("create_integration_portal_link maps platforms and expiry", async () => {
+    sdk.socialAccount.socialAccountCreatePortalLink.mockResolvedValue({ url: "https://portal.example/abc" });
+    const client = await connect();
+    const { json } = await callTool(client, "create_integration_portal_link", { platforms: ["x", "linkedin"], expiresInMinutes: 60 });
+    const body = sdk.socialAccount.socialAccountCreatePortalLink.mock.calls[0][0].requestBody;
+    expect(body.teamId).toBe("team_test");
+    expect([...body.socialAccountTypes].sort()).toEqual(["LINKEDIN", "TWITTER"]);
+    expect(body.expiresIn).toBe(60);
+    expect(json).toMatchObject({ url: "https://portal.example/abc" });
+  });
+
+  it("list_integrations_to_delete passes pagination", async () => {
+    sdk.socialAccount.socialAccountGetAccountsToDelete.mockResolvedValue({ items: [], pagination: { page: 1, pageSize: 20, total: 0, totalPages: 0 } });
+    const client = await connect();
+    await callTool(client, "list_integrations_to_delete", { page: 2, pageSize: 10 });
+    expect(sdk.socialAccount.socialAccountGetAccountsToDelete).toHaveBeenCalledWith({ page: 2, pageSize: 10 });
+  });
+});
+
+// --- media (list/get/delete + large upload) ---------------------------------
+
+describe("media management", () => {
+  it("list_media / get_media / delete_media / delete_media_many", async () => {
+    sdk.upload.uploadGetList.mockResolvedValue([{ id: "up_1", type: "image" }]);
+    sdk.upload.uploadGet.mockResolvedValue({ id: "up_1", type: "image" });
+    sdk.upload.uploadDelete.mockResolvedValue({ id: "up_1" });
+    sdk.upload.uploadDeleteMany.mockResolvedValue([{ id: "up_1" }, { id: "up_2" }]);
+    const client = await connect();
+
+    await callTool(client, "list_media", { type: "image", status: "UNUSED" });
+    expect(sdk.upload.uploadGetList).toHaveBeenCalledWith({ teamId: "team_test", type: "image", status: "UNUSED" });
+
+    await callTool(client, "get_media", { id: "up_1" });
+    expect(sdk.upload.uploadGet).toHaveBeenCalledWith({ id: "up_1" });
+
+    await callTool(client, "delete_media", { id: "up_1" });
+    expect(sdk.upload.uploadDelete).toHaveBeenCalledWith({ id: "up_1" });
+
+    await callTool(client, "delete_media_many", { ids: ["up_1", "up_2"] });
+    expect(sdk.upload.uploadDeleteMany).toHaveBeenCalledWith({ requestBody: { ids: ["up_1", "up_2"] } });
+  });
+
+  it("init_large_upload / finalize_large_upload pass through", async () => {
+    sdk.upload.uploadInitLargeUpload.mockResolvedValue({ url: "https://storage.example/put", path: "uploads/x.mp4" });
+    sdk.upload.uploadFinalizeLargeUpload.mockResolvedValue({ id: "up_big", type: "video" });
+    const client = await connect();
+    const { json: initJson } = await callTool(client, "init_large_upload", { fileName: "x.mp4", mimeType: "video/mp4" });
+    expect(sdk.upload.uploadInitLargeUpload).toHaveBeenCalledWith({ requestBody: { teamId: "team_test", fileName: "x.mp4", mimeType: "video/mp4" } });
+    expect(initJson).toMatchObject({ path: "uploads/x.mp4" });
+    const { json: finJson } = await callTool(client, "finalize_large_upload", { path: "uploads/x.mp4" });
+    expect(sdk.upload.uploadFinalizeLargeUpload).toHaveBeenCalledWith({ requestBody: { teamId: "team_test", path: "uploads/x.mp4" } });
+    expect(finJson).toMatchObject({ id: "up_big" });
+  });
+});
+
+// --- comment imports ---------------------------------------------------------
+
+describe("comment imports", () => {
+  it("create_comment_import / list / get / list_imported_comments", async () => {
+    sdk.comment.commentImportCreate.mockResolvedValue({ id: "ci_1", status: "PENDING" });
+    sdk.comment.commentImportGetList.mockResolvedValue({ imports: [{ id: "ci_1" }] });
+    sdk.comment.commentImportGetById.mockResolvedValue({ id: "ci_1" });
+    sdk.comment.commentImportGetFetchedComments.mockResolvedValue({ items: [{ id: "c_1" }] });
+    const client = await connect();
+
+    const { json } = await callTool(client, "create_comment_import", { postId: "post_1", platform: "instagram" });
+    expect(sdk.comment.commentImportCreate).toHaveBeenCalledWith({ requestBody: { teamId: "team_test", postId: "post_1", socialAccountType: "INSTAGRAM" } });
+    expect(json).toMatchObject({ id: "ci_1" });
+
+    await callTool(client, "list_comment_imports", { postId: "post_1", status: "COMPLETED" });
+    expect(sdk.comment.commentImportGetList).toHaveBeenCalledWith(expect.objectContaining({ teamId: "team_test", postId: "post_1", status: "COMPLETED" }));
+
+    await callTool(client, "get_comment_import", { importId: "ci_1" });
+    expect(sdk.comment.commentImportGetById).toHaveBeenCalledWith({ importId: "ci_1" });
+
+    await callTool(client, "list_imported_comments", { postId: "post_1", platform: "instagram" });
+    expect(sdk.comment.commentImportGetFetchedComments).toHaveBeenCalledWith(expect.objectContaining({ teamId: "team_test", postId: "post_1", platform: "INSTAGRAM" }));
+  });
+});
+
+// --- post-history imports ----------------------------------------------------
+
+describe("post imports", () => {
+  it("create_post_import / list / get / list_imported_posts / delete / retry", async () => {
+    sdk.postImport.postImportCreate.mockResolvedValue({ id: "pi_1", status: "PENDING" });
+    sdk.postImport.postImportGetStatus.mockResolvedValue({ imports: [{ id: "pi_1" }] });
+    sdk.postImport.postImportGetById.mockResolvedValue({ id: "pi_1" });
+    sdk.postImport.postImportGetImportedPosts.mockResolvedValue({ posts: [], total: 0, limit: 20, remainingCapacity: 100 });
+    sdk.postImport.postImportDeleteImportedPosts.mockResolvedValue({ deletedCount: 2 });
+    sdk.postImport.postImportRetryImport.mockResolvedValue({ id: "pi_1", status: "PENDING" });
+    const client = await connect();
+
+    const { json } = await callTool(client, "create_post_import", { platform: "tiktok", count: 10, withAnalytics: true });
+    expect(sdk.postImport.postImportCreate).toHaveBeenCalledWith({ requestBody: { teamId: "team_test", socialAccountType: "TIKTOK", count: 10, withAnalytics: true } });
+    expect(json).toMatchObject({ id: "pi_1" });
+
+    await callTool(client, "list_post_imports", { platform: "tiktok" });
+    expect(sdk.postImport.postImportGetStatus).toHaveBeenCalledWith({ teamId: "team_test", socialAccountType: "TIKTOK" });
+
+    await callTool(client, "get_post_import", { importId: "pi_1" });
+    expect(sdk.postImport.postImportGetById).toHaveBeenCalledWith({ importId: "pi_1" });
+
+    await callTool(client, "list_imported_posts", { platform: "tiktok", limit: 5 });
+    expect(sdk.postImport.postImportGetImportedPosts).toHaveBeenCalledWith({ teamId: "team_test", socialAccountType: "TIKTOK", limit: 5, offset: null });
+
+    await callTool(client, "delete_imported_posts", { postIds: ["ip_1", "ip_2"] });
+    expect(sdk.postImport.postImportDeleteImportedPosts).toHaveBeenCalledWith({ requestBody: { teamId: "team_test", postIds: ["ip_1", "ip_2"] } });
+
+    await callTool(client, "retry_post_import", { importId: "pi_1" });
+    expect(sdk.postImport.postImportRetryImport).toHaveBeenCalledWith({ importId: "pi_1", requestBody: { teamId: "team_test" } });
+  });
+});
+
+// --- CSV bulk import ---------------------------------------------------------
+
+describe("post CSV import", () => {
+  it("create_post_csv_import uploads a local CSV file", async () => {
+    sdk.postCsv.postCsvCreate.mockResolvedValue({ id: "csv_1", status: "PENDING" });
+    const file = path.join(os.tmpdir(), `bundlesocial-mcp-test-${Date.now()}.csv`);
+    await fs.writeFile(file, "platform,text\nx,hello\n");
+    try {
+      const client = await connect();
+      const { json } = await callTool(client, "create_post_csv_import", { source: file });
+      const arg = sdk.postCsv.postCsvCreate.mock.calls[0][0];
+      expect(arg.formData.file).toBeInstanceOf(File);
+      expect((arg.formData.file as File).type).toBe("text/csv");
+      expect(json).toMatchObject({ id: "csv_1" });
+    } finally {
+      await fs.rm(file, { force: true });
+    }
+  });
+
+  it("errors when the CSV file does not exist", async () => {
+    const client = await connect();
+    const { json, isError } = await callTool(client, "create_post_csv_import", { source: "/no/such/file.csv" });
+    expect(isError).toBe(true);
+    expect(json).toMatchObject({ error: { code: "CSV_NOT_FOUND" } });
+  });
+
+  it("list / get / status / rows", async () => {
+    sdk.postCsv.postCsvGetList.mockResolvedValue({ items: [{ id: "csv_1" }], total: 1 });
+    sdk.postCsv.postCsvGetById.mockResolvedValue({ id: "csv_1" });
+    sdk.postCsv.postCsvGetStatus.mockResolvedValue({ id: "csv_1", status: "COMPLETED" });
+    sdk.postCsv.postCsvGetRows.mockResolvedValue({ items: [{ id: "r_1", rowNumber: 1, status: "SUCCESS" }], total: 1 });
+    const client = await connect();
+
+    await callTool(client, "list_post_csv_imports", { limit: 10 });
+    expect(sdk.postCsv.postCsvGetList).toHaveBeenCalledWith({ limit: 10, offset: null });
+    await callTool(client, "get_post_csv_import", { importId: "csv_1" });
+    expect(sdk.postCsv.postCsvGetById).toHaveBeenCalledWith({ importId: "csv_1" });
+    await callTool(client, "get_post_csv_import_status", { importId: "csv_1" });
+    expect(sdk.postCsv.postCsvGetStatus).toHaveBeenCalledWith({ importId: "csv_1" });
+    await callTool(client, "get_post_csv_import_rows", { importId: "csv_1", status: "SUCCESS" });
+    expect(sdk.postCsv.postCsvGetRows).toHaveBeenCalledWith({ importId: "csv_1", status: "SUCCESS", limit: null, offset: null });
+  });
+});
+
+// --- analytics (new tools) ---------------------------------------------------
+
+describe("analytics extras", () => {
+  it("get_post_analytics with raw=true calls the raw endpoint", async () => {
+    sdk.analytics.analyticsGetPostAnalyticsRaw.mockResolvedValue({ raw: true });
+    const client = await connect();
+    await callTool(client, "get_post_analytics", { id: "post_1", platform: "instagram", raw: true });
+    expect(sdk.analytics.analyticsGetPostAnalyticsRaw).toHaveBeenCalledWith({ postId: "post_1", platformType: "INSTAGRAM" });
+    expect(sdk.analytics.analyticsGetPostAnalytics).not.toHaveBeenCalled();
+  });
+
+  it("get_account_analytics resolves team + platform", async () => {
+    sdk.analytics.analyticsGetSocialAccountAnalytics.mockResolvedValue({ socialAccount: { id: "acc_ig" }, items: [] });
+    const client = await connect();
+    const { json } = await callTool(client, "get_account_analytics", { platform: "instagram" });
+    expect(sdk.analytics.analyticsGetSocialAccountAnalytics).toHaveBeenCalledWith({ teamId: "team_test", platformType: "INSTAGRAM" });
+    expect(json).toMatchObject({ socialAccount: { id: "acc_ig" } });
+  });
+
+  it("get_account_analytics rejects a non-analytics platform", async () => {
+    const client = await connect();
+    const { json, isError } = await callTool(client, "get_account_analytics", { platform: "x" });
+    expect(isError).toBe(true);
+    expect(json).toMatchObject({ error: { code: "ANALYTICS_NOT_SUPPORTED" } });
+  });
+
+  it("get_bulk_post_analytics passes ids + platform", async () => {
+    sdk.analytics.analyticsGetBulkPostAnalytics.mockResolvedValue({ results: [], pagination: { page: 1, limit: 20, total: 0, totalPages: 0 } });
+    const client = await connect();
+    await callTool(client, "get_bulk_post_analytics", { postIds: ["p1", "p2"], platform: "tiktok" });
+    expect(sdk.analytics.analyticsGetBulkPostAnalytics).toHaveBeenCalledWith({ postIds: ["p1", "p2"], platformType: "TIKTOK", page: undefined, limit: undefined });
+  });
+
+  it("refresh_analytics forces a post when postId is given", async () => {
+    sdk.analytics.analyticsForcePostAnalytics.mockResolvedValue({ id: "an_1" });
+    const client = await connect();
+    await callTool(client, "refresh_analytics", { postId: "post_1" });
+    expect(sdk.analytics.analyticsForcePostAnalytics).toHaveBeenCalledWith({ requestBody: { postId: "post_1", importedPostId: null, platformType: null } });
+  });
+
+  it("refresh_analytics forces a social account when only platform is given", async () => {
+    sdk.analytics.analyticsForceSocialAccountAnalytics.mockResolvedValue({ id: "an_2" });
+    const client = await connect();
+    await callTool(client, "refresh_analytics", { platform: "instagram" });
+    expect(sdk.analytics.analyticsForceSocialAccountAnalytics).toHaveBeenCalledWith({ requestBody: { teamId: "team_test", platformType: "INSTAGRAM" } });
+  });
+
+  it("refresh_analytics errors with no target", async () => {
+    const client = await connect();
+    const { json, isError } = await callTool(client, "refresh_analytics", {});
+    expect(isError).toBe(true);
+    expect(json).toMatchObject({ error: { code: "REFRESH_TARGET_REQUIRED" } });
+  });
+});
+
+// --- check_setup -------------------------------------------------------------
+
+describe("check_setup", () => {
+  it("reports a healthy setup", async () => {
+    sdk.organization.organizationGetPostsUsage.mockResolvedValue({ used: 1, limit: 10, remaining: 9 });
+    const client = await connect();
+    const { json } = await callTool(client, "check_setup");
+    const result = json as { ok: boolean; checks: Array<{ name: string; status: string }> };
+    expect(result.ok).toBe(true);
+    expect(result.checks.find((c) => c.name === "api_reachable")?.status).toBe("ok");
+    expect(result.checks.find((c) => c.name === "authentication")?.status).toBe("ok");
+    expect(result.checks.find((c) => c.name === "team")?.status).toBe("ok");
+    expect(result.checks.find((c) => c.name === "integrations")?.status).toBe("ok");
+  });
+
+  it("reports fail when the API is unreachable", async () => {
+    sdk.app.appGetHealth.mockRejectedValueOnce(new Error("ECONNREFUSED"));
+    const client = await connect();
+    const { json } = await callTool(client, "check_setup");
+    const result = json as { ok: boolean; checks: Array<{ name: string; status: string }> };
+    expect(result.ok).toBe(false);
+    expect(result.checks.find((c) => c.name === "api_reachable")?.status).toBe("fail");
   });
 });

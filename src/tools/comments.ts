@@ -1,11 +1,15 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import type { CommentCreateData, CommentGetListData } from "bundlesocial";
+import type { CommentCreateData, CommentGetListData, CommentImportCreateData } from "bundlesocial";
 import { type ServerContext, resolveTeamId } from "../client";
 import { McpToolError, jsonResult } from "../errors";
 import { COMMENT_PLATFORMS, type CommentPlatform, isCommentPlatform, normalizePlatform } from "../platforms";
 import { resolveTargetPlatforms } from "../post-data";
 import { registerTool } from "../register-tool";
+
+type CommentImportPlatform = NonNullable<CommentImportCreateData["requestBody"]>["socialAccountType"];
+
+const commentImportStatusSchema = z.enum(["PENDING", "FETCHING", "RETRYING", "COMPLETED", "SKIPPED", "FAILED", "RATE_LIMITED"]);
 
 type CommentCreateBody = NonNullable<CommentCreateData["requestBody"]>;
 
@@ -155,5 +159,95 @@ export function registerCommentTools(server: McpServer, ctx: ServerContext): voi
       annotations: { destructiveHint: true, openWorldHint: true },
     },
     async ({ id }) => jsonResult(await ctx.client.comment.commentDelete({ id })),
+  );
+
+  // --- comment imports (fetch incoming comments on a published post) ---------
+
+  registerTool(
+    server,
+    "create_comment_import",
+    {
+      title: "Import comments on a post",
+      description:
+        "Start an async import of the (incoming) comments on a published post for one platform. Comment imports are available on FACEBOOK, INSTAGRAM, LINKEDIN, YOUTUBE, TIKTOK, REDDIT, THREADS, MASTODON, BLUESKY. Poll get_comment_import / list_comment_imports for status and list_imported_comments for the fetched comments.",
+      inputSchema: {
+        postId: z.string().min(1).describe("Id of the published post to import comments for."),
+        platform: z.string().min(1).describe("Platform name/alias to import comments from."),
+        teamId: teamIdSchema,
+      },
+      annotations: { openWorldHint: true },
+    },
+    async ({ postId, platform, teamId }) => {
+      const id = await resolveTeamId(ctx, teamId);
+      return jsonResult(
+        await ctx.client.comment.commentImportCreate({
+          requestBody: { teamId: id, postId, socialAccountType: normalizePlatform(platform) as CommentImportPlatform },
+        }),
+      );
+    },
+  );
+
+  registerTool(
+    server,
+    "list_comment_imports",
+    {
+      title: "List comment imports",
+      description: "List comment-import jobs for a team, optionally filtered by post and status.",
+      inputSchema: {
+        teamId: teamIdSchema,
+        postId: z.string().optional().describe("Only imports for this post."),
+        status: commentImportStatusSchema.optional().describe("Filter by import status."),
+        limit: z.number().int().positive().max(100).optional(),
+        offset: z.number().int().nonnegative().optional(),
+      },
+      annotations: { readOnlyHint: true, openWorldHint: true },
+    },
+    async ({ teamId, postId, status, limit, offset }) => {
+      const id = await resolveTeamId(ctx, teamId);
+      return jsonResult(await ctx.client.comment.commentImportGetList({ teamId: id, postId, status, limit: limit ?? null, offset: offset ?? null }));
+    },
+  );
+
+  registerTool(
+    server,
+    "get_comment_import",
+    {
+      title: "Get a comment import by id",
+      description: "Fetch a single comment-import job by its id, including its status and the number of comments imported.",
+      inputSchema: { importId: z.string().min(1).describe("Comment import id.") },
+      annotations: { readOnlyHint: true, openWorldHint: true },
+    },
+    async ({ importId }) => jsonResult(await ctx.client.comment.commentImportGetById({ importId })),
+  );
+
+  registerTool(
+    server,
+    "list_imported_comments",
+    {
+      title: "List imported comments for a post",
+      description: "List the comments fetched by comment imports for a post, optionally filtered by platform / social account.",
+      inputSchema: {
+        postId: z.string().min(1).describe("Id of the post whose imported comments to list."),
+        platform: z.string().optional().describe("Filter by platform name/alias."),
+        socialAccountId: z.string().optional().describe("Filter by social-account id."),
+        teamId: teamIdSchema,
+        limit: z.number().int().positive().max(100).optional(),
+        offset: z.number().int().nonnegative().optional(),
+      },
+      annotations: { readOnlyHint: true, openWorldHint: true },
+    },
+    async ({ postId, platform, socialAccountId, teamId, limit, offset }) => {
+      const id = await resolveTeamId(ctx, teamId);
+      return jsonResult(
+        await ctx.client.comment.commentImportGetFetchedComments({
+          teamId: id,
+          postId,
+          platform: platform ? (normalizePlatform(platform) as CommentImportPlatform) : undefined,
+          socialAccountId,
+          limit: limit ?? null,
+          offset: offset ?? null,
+        }),
+      );
+    },
   );
 }
