@@ -1,3 +1,17 @@
+# 1.0.0 (2026-05-17)
+
+
+### Bug Fixes
+
+* semantic release ([7a2f61e](https://github.com/bundleglobal/bundlesocial-mcp/commit/7a2f61ee298913d174836a3c4b523ced49b984b1))
+
+
+### Features
+
+* additional methods ([0aa1af1](https://github.com/bundleglobal/bundlesocial-mcp/commit/0aa1af1cf4d65af5c781630cd3baad2d121ad665))
+* bundle.social MCP server v1 ([3ed0235](https://github.com/bundleglobal/bundlesocial-mcp/commit/3ed0235902bf2ecd288cbfaf9976c6dcdaf9f160))
+* update comment ([c0da8ca](https://github.com/bundleglobal/bundlesocial-mcp/commit/c0da8caaa797eb6542886dff53b82b715344e204))
+
 # Changelog
 
 All notable changes to `bundlesocial-mcp` are documented here. This file is
