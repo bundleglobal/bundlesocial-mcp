@@ -27,6 +27,11 @@ jobs:
           node-version: "22"
       - name: Install dependencies
         run: npm clean-install
+      - name: Build
+        # Build before semantic-release so dist/ exists when `npm publish`
+        # validates the bin entry — npm strips bins pointing at missing files
+        # before prepublishOnly gets a chance to create them.
+        run: npm run build
       - name: Release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
