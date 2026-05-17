@@ -1,3 +1,10 @@
+## [1.0.1](https://github.com/bundleglobal/bundlesocial-mcp/compare/v1.0.0...v1.0.1) (2026-05-17)
+
+
+### Bug Fixes
+
+* build before release ([b7a6aa7](https://github.com/bundleglobal/bundlesocial-mcp/commit/b7a6aa7e74adc17ee3c3122bdaa9bfad07c727f0))
+
 # 1.0.0 (2026-05-17)
 
 
