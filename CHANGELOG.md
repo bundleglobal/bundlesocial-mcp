@@ -1,3 +1,10 @@
+# [1.1.0](https://github.com/bundleglobal/bundlesocial-mcp/compare/v1.0.1...v1.1.0) (2026-05-25)
+
+
+### Features
+
+* additional reference ([5a5133f](https://github.com/bundleglobal/bundlesocial-mcp/commit/5a5133fc5d51f49e8d8dfe8d9effbee129989dc9))
+
 ## [1.0.1](https://github.com/bundleglobal/bundlesocial-mcp/compare/v1.0.0...v1.0.1) (2026-05-17)
 
 
