@@ -21,6 +21,12 @@ Team-scoped tools take an optional `teamId` — skip it when your org has one te
 |---|---|
 | `check_setup` | Self-diagnosis: API key present, API reachable, API key valid, org API access, team resolution, connected integrations, posts quota. Returns `{ ok, checks: [...] }`. Run it first. |
 
+### Reference
+
+| Tool | Description |
+|---|---|
+| `describe_platform` | Look up the exact per-platform `data.<PLATFORM>` field schema for posts **and** comments — name, type, required flag, notes, capabilities and a ready-to-use example. Pass a `platform` (name/alias) or omit for all; `operation` (`post`/`comment`) narrows it. Call it before `create_post` / `create_comment` when unsure which fields a platform needs. |
+
 ### Organization & teams
 
 | Tool | Description |

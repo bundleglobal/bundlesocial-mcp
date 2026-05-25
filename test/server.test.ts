@@ -185,6 +185,8 @@ describe("tool registry", () => {
       [
         // diagnostics
         "check_setup",
+        // platform reference
+        "describe_platform",
         // organization
         "get_organization",
         "get_usage",
@@ -898,6 +900,58 @@ describe("analytics extras", () => {
     const { json, isError } = await callTool(client, "refresh_analytics", {});
     expect(isError).toBe(true);
     expect(json).toMatchObject({ error: { code: "REFRESH_TARGET_REQUIRED" } });
+  });
+});
+
+// --- describe_platform -------------------------------------------------------
+
+describe("describe_platform", () => {
+  it("describes a single platform by alias, with post + comment schemas", async () => {
+    const client = await connect();
+    const { json } = await callTool(client, "describe_platform", { platform: "reddit" });
+    const result = json as {
+      platform: {
+        platform: string;
+        capabilities: { posting: boolean; comments: boolean; analytics: boolean };
+        post: { fields: Array<{ name: string; required: boolean }> };
+        comment: { fields: Array<{ name: string }> };
+      };
+      mediaNotes: string[];
+    };
+    expect(result.platform.platform).toBe("REDDIT");
+    expect(result.platform.capabilities.posting).toBe(true);
+    expect(result.platform.post.fields.find((f) => f.name === "sr")?.required).toBe(true);
+    expect(result.platform.comment.fields.map((f) => f.name)).toEqual(["text"]);
+    expect(result.mediaNotes.length).toBeGreaterThan(0);
+  });
+
+  it("normalizes aliases (x -> TWITTER) and marks comments unsupported", async () => {
+    const client = await connect();
+    const { json } = await callTool(client, "describe_platform", { platform: "x", operation: "comment" });
+    const result = json as { platform: { platform: string; comment: { supported?: boolean } } };
+    expect(result.platform.platform).toBe("TWITTER");
+    expect(result.platform.comment.supported).toBe(false);
+  });
+
+  it("narrows to the post operation only", async () => {
+    const client = await connect();
+    const { json } = await callTool(client, "describe_platform", { platform: "tiktok", operation: "post" });
+    const result = json as { platform: { post?: unknown; comment?: unknown } };
+    expect(result.platform.post).toBeTruthy();
+    expect(result.platform.comment).toBeUndefined();
+  });
+
+  it("returns every platform when none is given", async () => {
+    const client = await connect();
+    const { json } = await callTool(client, "describe_platform");
+    const result = json as { platforms: Array<{ platform: string }> };
+    expect(result.platforms).toHaveLength(14);
+  });
+
+  it("returns a structured error for an unknown platform", async () => {
+    const client = await connect();
+    const { json } = await callTool(client, "describe_platform", { platform: "myspace" });
+    expect(json).toMatchObject({ error: { code: "UNKNOWN_PLATFORM" } });
   });
 });
 

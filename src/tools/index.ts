@@ -11,11 +11,13 @@ import { registerOrganizationTools } from "./organization";
 import { registerPostImportTools } from "./post-imports";
 import { registerPostCsvTools } from "./post-csv";
 import { registerDiagnosticsTools } from "./diagnostics";
+import { registerPlatformReferenceTools } from "./platform-reference";
 
 export function registerAllTools(server: McpServer, ctx: ServerContext): void {
   registerOrganizationTools(server, ctx);
   registerTeamTools(server, ctx);
   registerIntegrationTools(server, ctx);
+  registerPlatformReferenceTools(server, ctx);
   registerPostTools(server, ctx);
   registerCommentTools(server, ctx);
   registerMediaTools(server, ctx);
