@@ -1,3 +1,10 @@
+# [1.2.0](https://github.com/bundleglobal/bundlesocial-mcp/compare/v1.1.0...v1.2.0) (2026-07-30)
+
+
+### Features
+
+* catch up with bundle.social API and SDK 2.61.0 ([d49ee6b](https://github.com/bundleglobal/bundlesocial-mcp/commit/d49ee6b4cf022f8086ae1b725749d789968ff12c))
+
 # [1.1.0](https://github.com/bundleglobal/bundlesocial-mcp/compare/v1.0.1...v1.1.0) (2026-05-25)
 
 
