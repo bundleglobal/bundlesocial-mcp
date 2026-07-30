@@ -1,6 +1,6 @@
 # bundlesocial-mcp
 
-[Model Context Protocol](https://modelcontextprotocol.io) server for the [bundle.social](https://bundle.social) social-media API. It lets MCP clients — Claude Desktop, Claude Code, Cursor, and anything else that speaks MCP — post, schedule, list and analyze content across 14+ platforms (X, Instagram, TikTok, LinkedIn, YouTube, Facebook, Pinterest, Reddit, Threads, Bluesky, Mastodon, Discord, Slack, Google Business Profile).
+[Model Context Protocol](https://modelcontextprotocol.io) server for the [bundle.social](https://bundle.social) social-media API. It lets MCP clients — Claude Desktop, Claude Code, Cursor, and anything else that speaks MCP — post, schedule, list and analyze content across 15+ platforms (X, Instagram, TikTok, LinkedIn, YouTube, Facebook, Pinterest, Reddit, Threads, Bluesky, Mastodon, Discord, Slack, Google Business Profile, Snapchat).
 
 It's a thin wrapper over the official [`bundlesocial`](https://www.npmjs.com/package/bundlesocial) Node SDK. Same surface as [`bundlesocial-cli`](https://www.npmjs.com/package/bundlesocial-cli) — posting, comments, media, analytics, team & integration management, and post-history/comment/CSV imports — exposed as MCP tools.
 
@@ -33,6 +33,7 @@ Team-scoped tools take an optional `teamId` — skip it when your org has one te
 |---|---|
 | `get_organization` | Fetch the organization — id, name, API-access flag, plan limits, teams. |
 | `get_usage` | Posts / comments / uploads usage quotas + a paginated per-account post-import usage breakdown. |
+| `get_daily_limits_usage` | One connected account's daily post/comment allowance (used/limit/remaining) for a day — check it before bulk-scheduling. |
 | `list_teams` | List teams in the organization (paginated, searchable). |
 | `get_team` | Fetch one team by id (incl. its connected integrations). |
 | `create_team` | Create a team (optionally copy another team's social accounts via `copyTeamId`). |
@@ -55,7 +56,7 @@ Team-scoped tools take an optional `teamId` — skip it when your org has one te
 | `copy_integration` | Copy connected accounts between teams (`fromTeamId` → `toTeamId`). |
 | `list_integrations_to_delete` | List social accounts scheduled for deletion (paginated). |
 | `list_integration_tools` | List the read-only platform helper methods callable via `trigger_integration_tool`. |
-| `trigger_integration_tool` | Call a helper: subreddit flairs/requirements, YouTube categories/playlists/regions, LinkedIn mentions, Instagram locations, Google Business categories, TikTok trending music. Use it to discover values the API needs. |
+| `trigger_integration_tool` | Call a helper: subreddit flairs/requirements, YouTube categories/playlists/regions, LinkedIn mentions, Instagram locations/audio/business discovery, Google Business categories, TikTok trending music. Use it to discover values the API needs. |
 
 ### Posts
 
@@ -68,16 +69,22 @@ Team-scoped tools take an optional `teamId` — skip it when your org has one te
 | `delete_post` | Delete a post by id (destructive). |
 | `update_post` | Update an existing post — only the fields you pass change; reuses the post's platforms when changing content without `platforms`. |
 | `retry_post` | Re-attempt a post that ended in `ERROR`. |
+| `get_post_by_reference_key` | Fetch a post by the `referenceKey` set on it, instead of its bundle.social id. |
+| `list_reconnect_candidates` / `reconnect_posts` | List draft/scheduled posts that lost their social account after a disconnect, and reattach them to the newly connected account. |
+
+`create_post` / `schedule_post` / `update_post` also take `referenceKey` (your own identifier for the post) and `firstComment` — a comment published as soon as the post goes live, either one string for every comment-capable target or an object keyed by platform.
 
 ### Comments
 
 | Tool | Description |
 |---|---|
-| `create_comment` | Comment on a post — pass `content` multiple times for a chain of replies (X-style thread via comments). Comment-capable platforms: TIKTOK, YOUTUBE, INSTAGRAM, FACEBOOK, THREADS, LINKEDIN, REDDIT, MASTODON, DISCORD, SLACK, BLUESKY. |
+| `create_comment` | Comment on a post — pass `content` multiple times for a chain of replies (X-style thread via comments). Comment-capable platforms: TIKTOK, YOUTUBE, INSTAGRAM, FACEBOOK, THREADS, LINKEDIN, REDDIT, MASTODON, DISCORD, SLACK, BLUESKY. Use `importedPostId` to comment on a post from `create_post_import` (with explicit `platforms`), or `fetchedParentCommentId` to reply to a comment from `create_comment_import`. |
 | `list_comments` / `get_comment` / `delete_comment` | List, fetch, and delete comments. |
+| `retry_comment` | Re-attempt a comment that ended in `ERROR`. |
 | `create_comment_import` | Start an async import of a published post's (incoming) comments for one platform. |
 | `list_comment_imports` / `get_comment_import` | List / fetch comment-import jobs. |
 | `list_imported_comments` | List the comments fetched for a post via `create_comment_import`. |
+| `act_on_imported_comment` | Moderate an imported comment — `DELETE`, `HIDE`, `UNHIDE`, `LIKE`, `UNLIKE`, `APPROVE`, `REJECT` (support varies by platform), optionally banning the author. |
 
 ### Media (uploads)
 
@@ -121,7 +128,7 @@ Team-scoped tools take an optional `teamId` — skip it when your org has one te
 
 ### Targeting platforms & per-platform fields
 
-`create_post` / `schedule_post` target platforms by **name** (`x`, `tiktok`, `instagram`, `youtube`, `facebook`, `threads`, `linkedin`, `pinterest`, `reddit`, `mastodon`, `discord`, `slack`, `gbp`) or by **integration id** (from `list_integrations`). Put platform-required fields under `platformSettings` keyed by platform — e.g. Reddit `sr`, Pinterest `boardName`, TikTok `privacy`, YouTube `madeForKids`/`privacyStatus`, Instagram/Facebook `type` — or pass the full `data` object verbatim. The complete per-platform parameter reference is at **<https://docs.bundle.social/api-reference/platform-parameters>**.
+`create_post` / `schedule_post` target platforms by **name** (`x`, `tiktok`, `instagram`, `youtube`, `facebook`, `threads`, `linkedin`, `pinterest`, `reddit`, `mastodon`, `discord`, `slack`, `bluesky`, `gbp`, `snapchat`) or by **integration id** (from `list_integrations`). Put platform-required fields under `platformSettings` keyed by platform — e.g. Reddit `sr`, Pinterest `boardName`, TikTok `privacy`, YouTube `madeForKids`/`privacyStatus`, Instagram/Facebook `type` — or pass the full `data` object verbatim. The complete per-platform parameter reference is at **<https://docs.bundle.social/api-reference/platform-parameters>**.
 
 ## Configuration
 

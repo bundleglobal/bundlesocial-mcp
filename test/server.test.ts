@@ -190,6 +190,7 @@ describe("tool registry", () => {
         // organization
         "get_organization",
         "get_usage",
+        "get_daily_limits_usage",
         // teams
         "list_teams",
         "get_team",
@@ -220,17 +221,22 @@ describe("tool registry", () => {
         "delete_post",
         "update_post",
         "retry_post",
+        "get_post_by_reference_key",
+        "list_reconnect_candidates",
+        "reconnect_posts",
         // comments
         "create_comment",
         "list_comments",
         "get_comment",
         "delete_comment",
         "update_comment",
+        "retry_comment",
         // comment imports
         "create_comment_import",
         "list_comment_imports",
         "get_comment_import",
         "list_imported_comments",
+        "act_on_imported_comment",
         // media
         "upload_media",
         "list_media",
@@ -945,7 +951,7 @@ describe("describe_platform", () => {
     const client = await connect();
     const { json } = await callTool(client, "describe_platform");
     const result = json as { platforms: Array<{ platform: string }> };
-    expect(result.platforms).toHaveLength(14);
+    expect(result.platforms).toHaveLength(15);
   });
 
   it("returns a structured error for an unknown platform", async () => {

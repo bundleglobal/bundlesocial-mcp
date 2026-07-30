@@ -102,6 +102,28 @@ export const INTEGRATION_TOOLS: IntegrationTool[] = [
       }),
   },
   {
+    id: "instagram:audio",
+    platform: "INSTAGRAM",
+    description:
+      "Search the Instagram audio catalogue (use the returned audio_id as `musicSoundInfo.musicSoundId` when posting a Reel).",
+    requiredParams: ["audioType"],
+    optionalParams: ["searchQuery"],
+    run: (client, teamId, p) =>
+      client.misc.miscInstagramSearchAudio({
+        teamId,
+        audioType: String(p.audioType) as "original_sound" | "music",
+        ...(p.searchQuery ? { searchQuery: String(p.searchQuery) } : {}),
+      }),
+  },
+  {
+    id: "instagram:business-discovery",
+    platform: "INSTAGRAM",
+    description:
+      "Look up a public Instagram Business/Creator profile by username (followers, media count, recent public media). Requires an account connected via Facebook Login.",
+    requiredParams: ["username"],
+    run: (client, teamId, p) => client.misc.miscInstagramBusinessDiscovery({ teamId, username: String(p.username) }),
+  },
+  {
     id: "tiktok:trending-music",
     platform: "TIKTOK",
     description: "List trending tracks from TikTok's commercial music library (use a track id in the TikTok post settings).",

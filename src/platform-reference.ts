@@ -81,6 +81,7 @@ const ANALYTICS: Platform[] = [
   "LINKEDIN",
   "BLUESKY",
   "GOOGLE_BUSINESS",
+  "SNAPCHAT",
 ];
 
 /** A comment's `data.<PLATFORM>` only ever carries the comment body text. */
@@ -107,6 +108,7 @@ const POST: Record<Platform, OperationReference> = {
         required: false,
         notes: "Who can reply to the tweet.",
       },
+      { name: "isAiGenerated", type: "boolean", required: false, notes: 'Adds X\'s "made with AI" label to a post with AI-generated media.' },
     ],
     example: { TWITTER: { text: "Shipping day 🚀", replySettings: "EVERYONE" } },
   },
@@ -127,6 +129,7 @@ const POST: Record<Platform, OperationReference> = {
       { name: "externalUrl", type: "string (URL)", required: false, notes: "External link card URL." },
       { name: "externalTitle", type: "string", required: false, notes: "External link card title." },
       { name: "externalDescription", type: "string", required: false, notes: "External link card description." },
+      { name: "thumbnail", type: "string (URL)", required: false, notes: "Image for the external link card (a public bundle.social upload URL)." },
       { name: "videoAlt", type: "string", required: false, notes: "Alt text for a video embed." },
     ],
     example: { BLUESKY: { text: "New post", tags: ["launch", "indie"], externalUrl: "https://bundle.social" } },
@@ -155,8 +158,56 @@ const POST: Record<Platform, OperationReference> = {
         required: false,
         notes: "Per-image alt text (alternative to uploadIds).",
       },
+      {
+        name: "topicTag",
+        type: "string",
+        required: false,
+        notes: "One topic tag shown in the post header. 1–50 chars, no periods (.) or ampersands (&).",
+      },
+      {
+        name: "replyControl",
+        type: "everyone | accounts_you_follow | mentioned_only | parent_post_author_only | followers_only",
+        required: false,
+        notes: "Who can reply. Threads defaults to everyone.",
+      },
+      {
+        name: "linkAttachment",
+        type: "string (URL)",
+        required: false,
+        notes: "Link preview card. Text-only posts (no uploadIds).",
+      },
+      {
+        name: "poll",
+        type: "{ optionA: string, optionB: string, optionC?: string, optionD?: string }",
+        required: false,
+        notes: "2–4 options, 1–25 chars each. Text-only posts, and not together with `gif`.",
+      },
+      {
+        name: "gif",
+        type: '{ gifId: string, provider?: "GIPHY" }',
+        required: false,
+        notes: "GIF attachment (GIPHY is the only provider). Text-only posts, and not together with `poll`.",
+      },
+      {
+        name: "allowlistedCountryCodes",
+        type: "string[]",
+        required: false,
+        notes: "Restrict visibility to these ISO 3166-1 alpha-2 codes. Requires Meta account eligibility.",
+      },
+      {
+        name: "crosspostToInstagramStory",
+        type: "boolean",
+        required: false,
+        notes: "Also share the post to the linked Instagram account as a Story.",
+      },
+      {
+        name: "crosspostToInstagramStoryDarkMode",
+        type: "boolean",
+        required: false,
+        notes: "Cross-post the Instagram Story in dark mode.",
+      },
     ],
-    example: { THREADS: { text: "Quick thought", mediaItems: [{ uploadId: "<id>", altText: "chart" }] } },
+    example: { THREADS: { text: "Quick thought", topicTag: "shipping", replyControl: "everyone" } },
   },
   LINKEDIN: {
     dataKey: "data.LINKEDIN",
@@ -165,6 +216,7 @@ const POST: Record<Platform, OperationReference> = {
       { name: "text", type: "string", required: true, notes: "Required. ~3000 chars." },
       { name: "uploadIds", type: "string[]", required: false, notes: "Images, a single video, or a document/PDF." },
       { name: "link", type: "string (URL)", required: false, notes: "For an article-preview post." },
+      { name: "thumbnail", type: "string (URL)", required: false, notes: "Cover image (a public bundle.social upload URL)." },
       { name: "mediaTitle", type: "string", required: false, notes: "Title for a video or document post." },
       { name: "privacy", type: "CONNECTIONS | PUBLIC | LOGGED_IN | CONTAINER", required: false, notes: "Visibility." },
       { name: "hideFromFeed", type: "boolean", required: false, notes: "Don't show in the main feed." },
@@ -235,6 +287,25 @@ const POST: Record<Platform, OperationReference> = {
         required: false,
         notes: "Reels only — trial reels are shown to non-followers first.",
       },
+      {
+        name: "isPaidPartnership",
+        type: "boolean",
+        required: false,
+        notes: 'Adds the native "Paid partnership" label. Implied by brandedContentSponsors; use alone for a label without a named sponsor.',
+      },
+      {
+        name: "brandedContentSponsors",
+        type: "string[]",
+        required: false,
+        notes: "Up to 2 Instagram usernames to tag as paid-partnership sponsors. Accounts connected via Facebook Login only.",
+      },
+      {
+        name: "musicSoundInfo",
+        type: "{ musicSoundId, musicSoundVolume?, videoOriginalSoundVolume? }",
+        required: false,
+        notes: 'Reels only — get an audio_id from trigger_integration_tool method "instagram:audio". Volumes 0–100.',
+      },
+      { name: "isAiGenerated", type: "boolean", required: false, notes: "Adds Instagram's AI content label." },
     ],
     example: { INSTAGRAM: { type: "REEL", text: "BTS", shareToFeed: true, thumbnailOffset: 1500 } },
   },
@@ -288,6 +359,18 @@ const POST: Record<Platform, OperationReference> = {
       { name: "description", type: "string", required: false, notes: "Video description." },
       { name: "thumbnail", type: "string (URL)", required: false, notes: "Custom thumbnail (`type: VIDEO`)." },
       { name: "privacy", type: "PUBLIC | UNLISTED | PRIVATE", required: false, notes: "Visibility." },
+      {
+        name: "defaultLanguage",
+        type: "string (BCP-47)",
+        required: false,
+        notes: 'Language of the title and description, e.g. "en" or "pl".',
+      },
+      {
+        name: "defaultAudioLanguage",
+        type: "string (BCP-47)",
+        required: false,
+        notes: 'Language of the video\'s default audio track, e.g. "en" or "pl".',
+      },
       { name: "madeForKids", type: "boolean", required: true, notes: "Required-ish — YouTube needs you to declare this." },
       { name: "containsSyntheticMedia", type: "boolean", required: false, notes: "Mark AI-generated content." },
       { name: "hasPaidProductPlacement", type: "boolean", required: false, notes: "Declare paid placements." },
@@ -377,8 +460,27 @@ const POST: Record<Platform, OperationReference> = {
       { name: "note", type: "string", required: false, notes: "Private note (not public)." },
       { name: "thumbnail", type: "string (URL)", required: false, notes: "Cover image." },
       { name: "dominantColor", type: "string", required: false, notes: "Hex color used as a placeholder before the image loads." },
+      { name: "isAiGenerated", type: "boolean", required: false, notes: "Adds Pinterest's AI disclosure label." },
     ],
     example: { PINTEREST: { boardName: "Inspiration", text: "New idea", uploadIds: ["<id>"], link: "https://bundle.social" } },
+  },
+  SNAPCHAT: {
+    dataKey: "data.SNAPCHAT",
+    summary: "Post a Story or a Spotlight to a Snapchat Public Profile.",
+    fields: [
+      { name: "type", type: "STORY | SPOTLIGHT", required: false, notes: "Default STORY." },
+      {
+        name: "uploadIds",
+        type: "string[]",
+        required: false,
+        notes: "One image or video. Video: 5–180s, ≥540×960, up to 100 MB. Images are Story-only.",
+      },
+      { name: "text", type: "string", required: false, notes: "Alias for `description` (Spotlight). ≤160 chars." },
+      { name: "description", type: "string", required: false, notes: "Spotlight description. ≤160 chars." },
+      { name: "locale", type: "string", required: false, notes: "Spotlight locale in `en_US` form. Default en_US." },
+      { name: "skipSaveToProfile", type: "boolean", required: false, notes: "Spotlight only — don't save the post to the profile." },
+    ],
+    example: { SNAPCHAT: { type: "SPOTLIGHT", description: "Launch day", locale: "en_US" } },
   },
 };
 
@@ -397,6 +499,7 @@ const ALIASES_BY_PLATFORM: Record<Platform, string[]> = {
   SLACK: ["slack"],
   GOOGLE_BUSINESS: ["gbp", "google-business", "google_business", "gmb"],
   PINTEREST: ["pinterest", "pin"],
+  SNAPCHAT: ["snapchat", "snap"],
 };
 
 const LABELS: Record<Platform, string> = {
@@ -414,6 +517,7 @@ const LABELS: Record<Platform, string> = {
   SLACK: "Slack",
   GOOGLE_BUSINESS: "Google Business Profile",
   PINTEREST: "Pinterest",
+  SNAPCHAT: "Snapchat (Public Profile)",
 };
 
 const NOTES: Partial<Record<Platform, string[]>> = {
@@ -428,13 +532,21 @@ const NOTES: Partial<Record<Platform, string[]>> = {
   YOUTUBE: [
     'There is no `categoryId` in the post `data`; fetch categories with trigger_integration_tool method "youtube:categories".',
   ],
-  INSTAGRAM: ["Account types are connected via Facebook or directly via Instagram (instagramConnectionMethod on the integration)."],
+  INSTAGRAM: [
+    "Account types are connected via Facebook or directly via Instagram (instagramConnectionMethod on the integration).",
+    "brandedContentSponsors and business discovery only work for accounts connected through Facebook Login.",
+  ],
   GOOGLE_BUSINESS: ["Set the location up in the dashboard first; details/categories/hours are managed via integration helper tools."],
+  SNAPCHAT: [
+    "Requires a Snapchat Public Profile. Stories take an image or a video; Spotlights are video-only.",
+    "No comments API surface for Snapchat.",
+  ],
+  THREADS: ["Polls, GIFs and link attachments are mutually exclusive with media — Threads only allows them on text-only posts."],
 };
 
 /** General media guidance that applies to every platform's `uploadIds`. */
 export const MEDIA_NOTES: string[] = [
-  "Images: JPG / PNG / WEBP / GIF. Video: MP4 / MOV / WEBM.",
+  "Images: JPG / PNG / WEBP / GIF. Video: MP4 / MOV / WEBM, up to 5 GB via the large-upload flow.",
   "Upload media first (upload_media → id), or let create_post's `media` arg do it; then put ids in `uploadIds` (and carouselItems[].uploadId / mediaItems[].uploadId).",
   "Large videos can take a while to process server-side after upload — a newly created post may sit in PROCESSING before going POSTED. Use get_post to check status; retry_post for a transient platform failure.",
 ];

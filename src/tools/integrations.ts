@@ -95,7 +95,9 @@ export function registerIntegrationTools(server: McpServer, ctx: ServerContext):
         options: z
           .record(z.string(), z.unknown())
           .optional()
-          .describe("Advanced provider flags, e.g. {\"instagramConnectionMethod\":\"INSTAGRAM\",\"withBusinessScope\":true,\"disableAutoLogin\":true,\"forceBrowserOAuth\":true}."),
+          .describe(
+            "Advanced provider flags, e.g. {\"instagramConnectionMethod\":\"INSTAGRAM\",\"withBusinessScope\":true,\"disableAutoLogin\":true,\"forceBrowserOAuth\":true,\"tiktokForceLogin\":true}. `withBusinessScope` also unlocks YouTube monetization analytics; `tiktokForceLogin` (experimental) forces TikTok's account picker when it keeps reusing the wrong active account.",
+          ),
       },
       annotations: { openWorldHint: true },
     },
@@ -187,7 +189,9 @@ export function registerIntegrationTools(server: McpServer, ctx: ServerContext):
         options: z
           .record(z.string(), z.unknown())
           .optional()
-          .describe("Advanced portal options (logoUrl, userName, language, hidePoweredBy, maxSocialAccountsConnected, …)."),
+          .describe(
+            "Advanced portal options — branding (logoUrl, userLogoUrl, userName, goBackButtonText, hidePoweredBy, hideGoBackButton, hideUserLogo, hideUserName, hideLanguageSwitcher, showModalOnConnectSuccess, language, maxSocialAccountsConnected) and the same OAuth flags as connect_integration (serverUrl, instagramConnectionMethod, withBusinessScope, disableAutoLogin, forceBrowserOAuth, tiktokForceLogin).",
+          ),
       },
       annotations: { openWorldHint: true },
     },

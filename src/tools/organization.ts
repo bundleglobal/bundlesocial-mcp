@@ -59,4 +59,26 @@ export function registerOrganizationTools(server: McpServer, ctx: ServerContext)
       return jsonResult({ posts, comments, uploads, imports });
     },
   );
+
+  registerTool(
+    server,
+    "get_daily_limits_usage",
+    {
+      title: "Get a connected account's daily limits",
+      description:
+        "How much of one connected account's daily post and comment allowance has been used on a given day (defaults to today, UTC). Use it before bulk-scheduling to avoid hitting a per-account daily cap.",
+      inputSchema: {
+        socialAccountId: z.string().min(1).describe("Connected social account id (see list_integrations)."),
+        date: z.string().optional().describe("Day to report on, YYYY-MM-DD. Defaults to today."),
+      },
+      annotations: { readOnlyHint: true, openWorldHint: true },
+    },
+    async ({ socialAccountId, date }) =>
+      jsonResult(
+        await ctx.client.organization.organizationGetDailyLimitsUsage({
+          socialAccountId,
+          ...(date ? { date } : {}),
+        }),
+      ),
+  );
 }

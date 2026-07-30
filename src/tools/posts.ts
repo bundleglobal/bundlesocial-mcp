@@ -1,15 +1,73 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import type { PostCreateData, PostGetListData, PostUpdateData } from "bundlesocial";
+import type {
+  PostCreateData,
+  PostGetListData,
+  PostGetReconnectSocialAccountCandidatesData,
+  PostReconnectSocialAccountData,
+  PostUpdateData,
+} from "bundlesocial";
 import { type ServerContext, resolveTeamId } from "../client";
 import { McpToolError, jsonResult } from "../errors";
-import { normalizePlatform, type Platform } from "../platforms";
+import { COMMENT_PLATFORMS, isCommentPlatform, normalizePlatform, type Platform } from "../platforms";
 import { uploadMediaRefs } from "../media";
 import { buildPostData, deriveTitle, platformsFromData, resolveTargetPlatforms, toIsoDate } from "../post-data";
 import { registerTool } from "../register-tool";
 
-type PostData = NonNullable<PostCreateData["requestBody"]>["data"];
+type PostCreateBody = NonNullable<PostCreateData["requestBody"]>;
+type PostData = PostCreateBody["data"];
 type PostUpdateBody = NonNullable<PostUpdateData["requestBody"]>;
+type ReconnectPlatform = NonNullable<PostReconnectSocialAccountData["requestBody"]>["type"];
+type PostFirstComment = NonNullable<NonNullable<PostCreateBody["firstComment"]>>;
+
+/**
+ * Normalize the `firstComment` argument into the per-platform object the API
+ * expects: either a platform-keyed map, or one string applied to every
+ * comment-capable platform the post targets.
+ */
+function buildFirstComment(
+  firstComment: string | Record<string, string> | undefined,
+  targets: Platform[],
+): PostFirstComment | undefined {
+  if (firstComment === undefined) return undefined;
+  if (typeof firstComment === "string") {
+    const commentable = targets.filter(isCommentPlatform);
+    if (commentable.length === 0) {
+      throw new McpToolError(
+        "COMMENTS_NOT_SUPPORTED",
+        `None of the targeted platforms support comments, so firstComment has no effect. Supported: ${COMMENT_PLATFORMS.join(", ")}.`,
+      );
+    }
+    const perPlatform: PostFirstComment = {};
+    for (const platform of commentable) perPlatform[platform] = firstComment;
+    return perPlatform;
+  }
+  const result: PostFirstComment = {};
+  for (const [key, value] of Object.entries(firstComment)) {
+    const platform = normalizePlatform(key);
+    if (!isCommentPlatform(platform)) {
+      throw new McpToolError(
+        "COMMENTS_NOT_SUPPORTED",
+        `A first comment is not supported on ${platform}. Supported: ${COMMENT_PLATFORMS.join(", ")}.`,
+      );
+    }
+    result[platform] = value;
+  }
+  return result;
+}
+
+const referenceKeySchema = z
+  .string()
+  .min(1)
+  .optional()
+  .describe("Your own identifier for this post. Look the post up later with get_post_by_reference_key.");
+
+const firstCommentSchema = z
+  .union([z.string().min(1), z.record(z.string(), z.string())])
+  .optional()
+  .describe(
+    'Comment published as soon as the post itself goes live. A string applies to every comment-capable target; a platform-keyed object targets specific platforms, e.g. {"INSTAGRAM":"more below 👇"}. Supported on TIKTOK, YOUTUBE, INSTAGRAM, FACEBOOK, THREADS, LINKEDIN, REDDIT, MASTODON, DISCORD, SLACK, BLUESKY.',
+  );
 
 const teamIdSchema = z
   .string()
@@ -21,7 +79,7 @@ const platformsSchema = z
   .array(z.string().min(1))
   .optional()
   .describe(
-    'Target platforms — names/aliases (x, tiktok, instagram, youtube, facebook, threads, linkedin, pinterest, reddit, mastodon, discord, slack, gbp) and/or connected integration ids from list_integrations. Required unless "data" is provided with platform keys.',
+    'Target platforms — names/aliases (x, tiktok, instagram, youtube, facebook, threads, linkedin, pinterest, reddit, mastodon, discord, slack, bluesky, gbp, snapchat) and/or connected integration ids from list_integrations. Required unless "data" is provided with platform keys.',
   );
 
 const mediaSchema = z
@@ -105,23 +163,26 @@ export function registerPostTools(server: McpServer, ctx: ServerContext): void {
         platformSettings: platformSettingsSchema,
         data: dataSchema,
         title: titleSchema,
+        referenceKey: referenceKeySchema,
+        firstComment: firstCommentSchema,
         draft: z.boolean().optional().default(false).describe("If true, save as a DRAFT instead of publishing now."),
       },
       annotations: { openWorldHint: true },
     },
-    async ({ teamId, content, platforms, media, platformSettings, data, title, draft }) => {
+    async ({ teamId, content, platforms, media, platformSettings, data, title, referenceKey, firstComment, draft }) => {
       const composed = await composePost(ctx, { teamId, content, platforms, media, platformSettings, data, title });
-      const post = await ctx.client.post.postCreate({
-        requestBody: {
-          teamId: composed.teamId,
-          title: composed.title,
-          postDate: new Date().toISOString(),
-          status: draft ? "DRAFT" : "SCHEDULED",
-          socialAccountTypes: composed.socialAccountTypes,
-          data: composed.data,
-        },
-      });
-      return jsonResult(post);
+      const requestBody: PostCreateBody = {
+        teamId: composed.teamId,
+        title: composed.title,
+        postDate: new Date().toISOString(),
+        status: draft ? "DRAFT" : "SCHEDULED",
+        socialAccountTypes: composed.socialAccountTypes,
+        data: composed.data,
+      };
+      if (referenceKey !== undefined) requestBody.referenceKey = referenceKey;
+      const resolvedFirstComment = buildFirstComment(firstComment, composed.socialAccountTypes);
+      if (resolvedFirstComment) requestBody.firstComment = resolvedFirstComment;
+      return jsonResult(await ctx.client.post.postCreate({ requestBody }));
     },
   );
 
@@ -141,23 +202,26 @@ export function registerPostTools(server: McpServer, ctx: ServerContext): void {
         platformSettings: platformSettingsSchema,
         data: dataSchema,
         title: titleSchema,
+        referenceKey: referenceKeySchema,
+        firstComment: firstCommentSchema,
       },
       annotations: { openWorldHint: true },
     },
-    async ({ teamId, date, content, platforms, media, platformSettings, data, title }) => {
+    async ({ teamId, date, content, platforms, media, platformSettings, data, title, referenceKey, firstComment }) => {
       const postDate = toIsoDate(date, "date");
       const composed = await composePost(ctx, { teamId, content, platforms, media, platformSettings, data, title });
-      const post = await ctx.client.post.postCreate({
-        requestBody: {
-          teamId: composed.teamId,
-          title: composed.title,
-          postDate,
-          status: "SCHEDULED",
-          socialAccountTypes: composed.socialAccountTypes,
-          data: composed.data,
-        },
-      });
-      return jsonResult(post);
+      const requestBody: PostCreateBody = {
+        teamId: composed.teamId,
+        title: composed.title,
+        postDate,
+        status: "SCHEDULED",
+        socialAccountTypes: composed.socialAccountTypes,
+        data: composed.data,
+      };
+      if (referenceKey !== undefined) requestBody.referenceKey = referenceKey;
+      const resolvedFirstComment = buildFirstComment(firstComment, composed.socialAccountTypes);
+      if (resolvedFirstComment) requestBody.firstComment = resolvedFirstComment;
+      return jsonResult(await ctx.client.post.postCreate({ requestBody }));
     },
   );
 
@@ -244,11 +308,13 @@ export function registerPostTools(server: McpServer, ctx: ServerContext): void {
         media: mediaSchema,
         platformSettings: platformSettingsSchema,
         data: dataSchema,
+        referenceKey: referenceKeySchema,
+        firstComment: firstCommentSchema,
         teamId: teamIdSchema,
       },
       annotations: { openWorldHint: true },
     },
-    async ({ id, title, date, status, content, platforms, media, platformSettings, data, teamId }) => {
+    async ({ id, title, date, status, content, platforms, media, platformSettings, data, referenceKey, firstComment, teamId }) => {
       const resolvedTeamId = await resolveTeamId(ctx, teamId);
       const wantsDataChange =
         content !== undefined || (media?.length ?? 0) > 0 || platformSettings !== undefined || data !== undefined;
@@ -268,6 +334,11 @@ export function registerPostTools(server: McpServer, ctx: ServerContext): void {
 
       const requestBody: PostUpdateBody = {};
       if (title !== undefined) requestBody.title = title;
+      if (referenceKey !== undefined) requestBody.referenceKey = referenceKey;
+      if (firstComment !== undefined) {
+        const commentTargets = targets ?? (Object.keys((await ctx.client.post.postGet({ id })).data ?? {}) as Platform[]);
+        requestBody.firstComment = buildFirstComment(firstComment, commentTargets);
+      }
       if (date) requestBody.postDate = toIsoDate(date, "date");
       if (status) requestBody.status = status;
       if (targets && targets.length > 0) requestBody.socialAccountTypes = targets as PostUpdateBody["socialAccountTypes"];
@@ -283,7 +354,7 @@ export function registerPostTools(server: McpServer, ctx: ServerContext): void {
       if (Object.keys(requestBody).length === 0) {
         throw new McpToolError(
           "NOTHING_TO_UPDATE",
-          "Nothing to update — pass at least one of title, date, status, content, media, platformSettings, data, platforms.",
+          "Nothing to update — pass at least one of title, date, status, content, media, platformSettings, data, referenceKey, firstComment, platforms.",
         );
       }
       return jsonResult(await ctx.client.post.postUpdate({ id, requestBody }));
@@ -300,5 +371,73 @@ export function registerPostTools(server: McpServer, ctx: ServerContext): void {
       annotations: { openWorldHint: true },
     },
     async ({ id }) => jsonResult(await ctx.client.post.postRetry({ id })),
+  );
+
+  registerTool(
+    server,
+    "get_post_by_reference_key",
+    {
+      title: "Get a post by reference key",
+      description:
+        "Fetch a single post by the `referenceKey` set when it was created, instead of by bundle.social post id. Use this when you track posts under your own identifiers.",
+      inputSchema: { referenceKey: z.string().min(1).describe("The reference key you set on the post.") },
+      annotations: { readOnlyHint: true, openWorldHint: true },
+    },
+    async ({ referenceKey }) => jsonResult(await ctx.client.post.postGetByReferenceKey({ referenceKey })),
+  );
+
+  registerTool(
+    server,
+    "list_reconnect_candidates",
+    {
+      title: "List posts waiting for a reconnected account",
+      description:
+        "List draft/scheduled posts that lost their link to a social account after a disconnect and can be reattached to a newly connected account of the same platform. Pair with reconnect_posts.",
+      inputSchema: {
+        teamId: teamIdSchema,
+        platform: z.string().min(1).describe("Platform of the reconnected account (name or alias)."),
+        limit: z.number().int().positive().max(100).optional().describe("Max number of posts to return."),
+        offset: z.number().int().nonnegative().optional().describe("Number of posts to skip."),
+      },
+      annotations: { readOnlyHint: true, openWorldHint: true },
+    },
+    async ({ teamId, platform, limit, offset }) => {
+      const id = await resolveTeamId(ctx, teamId);
+      const params: PostGetReconnectSocialAccountCandidatesData = {
+        teamId: id,
+        type: normalizePlatform(platform) as PostGetReconnectSocialAccountCandidatesData["type"],
+        limit,
+        offset,
+      };
+      return jsonResult(await ctx.client.post.postGetReconnectSocialAccountCandidates(params));
+    },
+  );
+
+  registerTool(
+    server,
+    "reconnect_posts",
+    {
+      title: "Reattach posts to a reconnected account",
+      description:
+        "Attach a newly connected social account to posts that lost their link to the previous account of that platform. Without `postIds`, every candidate is reattached.",
+      inputSchema: {
+        teamId: teamIdSchema,
+        platform: z.string().min(1).describe("Platform of the reconnected account (name or alias)."),
+        postIds: z.array(z.string().min(1)).optional().describe("Only reattach these post ids. Defaults to every candidate."),
+      },
+      annotations: { openWorldHint: true },
+    },
+    async ({ teamId, platform, postIds }) => {
+      const id = await resolveTeamId(ctx, teamId);
+      return jsonResult(
+        await ctx.client.post.postReconnectSocialAccount({
+          requestBody: {
+            teamId: id,
+            type: normalizePlatform(platform) as ReconnectPlatform,
+            ...(postIds && postIds.length > 0 ? { postIds } : {}),
+          },
+        }),
+      );
+    },
   );
 }

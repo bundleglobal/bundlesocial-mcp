@@ -46,9 +46,19 @@ export function registerCommentTools(server: McpServer, ctx: ServerContext): voi
     {
       title: "Comment on a post",
       description:
-        "Post one or more comments on an existing post. Pass `content` multiple times to create a chain (the first replies to the post, each subsequent one replies to the previous comment) — useful for X-style threads via comments. Comments are supported on TIKTOK, YOUTUBE, INSTAGRAM, FACEBOOK, THREADS, LINKEDIN, REDDIT, MASTODON, DISCORD, SLACK, BLUESKY. Returns the created comment(s).",
+        "Post one or more comments on a post you created (`postId`) or on a post brought in by create_post_import (`importedPostId`). Pass `content` multiple times to create a chain (the first replies to the post, each subsequent one replies to the previous comment) — useful for X-style threads via comments. Use `fetchedParentCommentId` to reply to a comment pulled in by create_comment_import. Comments are supported on TIKTOK, YOUTUBE, INSTAGRAM, FACEBOOK, THREADS, LINKEDIN, REDDIT, MASTODON, DISCORD, SLACK, BLUESKY. Returns the created comment(s).",
       inputSchema: {
-        postId: z.string().min(1).describe("Id of the post to comment on."),
+        postId: z.string().min(1).optional().describe("Id of the bundle.social post to comment on. Either this or importedPostId is required."),
+        importedPostId: z
+          .string()
+          .min(1)
+          .optional()
+          .describe("Id of an imported (post-history) post to comment on instead of postId. Requires `platforms`."),
+        fetchedParentCommentId: z
+          .string()
+          .min(1)
+          .optional()
+          .describe("Reply to a comment fetched by create_comment_import (its imported-comment id) instead of to the post itself."),
         content: z.array(z.string().min(1)).min(1).describe("Comment text. Pass multiple to create a chain of replies."),
         platforms: z
           .array(z.string().min(1))
@@ -61,17 +71,23 @@ export function registerCommentTools(server: McpServer, ctx: ServerContext): voi
       },
       annotations: { openWorldHint: true },
     },
-    async ({ postId, content, platforms, date, delayMinutes, draft, teamId }) => {
+    async ({ postId, importedPostId, fetchedParentCommentId, content, platforms, date, delayMinutes, draft, teamId }) => {
       const id = await resolveTeamId(ctx, teamId);
+      if (!postId && !importedPostId) {
+        throw new McpToolError("NO_POST", "Pass `postId` (a bundle.social post) or `importedPostId` (a post brought in by create_post_import).");
+      }
       let resolved: CommentPlatform[];
       if (platforms && platforms.length > 0) {
         resolved = assertCommentPlatforms(await resolveTargetPlatforms(ctx.client, id, platforms));
-      } else {
+      } else if (postId) {
+        // An imported post has no bundle.social `data` to infer platforms from, so targets are explicit there.
         const post = await ctx.client.post.postGet({ id: postId });
         resolved = Object.keys(post.data ?? {}).filter(isCommentPlatform);
         if (resolved.length === 0) {
           throw new McpToolError("NO_TARGET", "Could not determine comment platforms from the post — pass `platforms` (comment-capable only).");
         }
+      } else {
+        throw new McpToolError("NO_TARGET", "Pass `platforms` when commenting on an imported post (comment-capable only).");
       }
       const status: CommentCreateBody["status"] = draft ? "DRAFT" : "SCHEDULED";
       const baseDate = date ? new Date(toIso(date)) : new Date();
@@ -85,8 +101,10 @@ export function registerCommentTools(server: McpServer, ctx: ServerContext): voi
         const comment = await ctx.client.comment.commentCreate({
           requestBody: {
             teamId: id,
-            internalPostId: postId,
+            ...(postId ? { internalPostId: postId } : { importedPostId: importedPostId as string }),
             ...(parentCommentId ? { internalParentCommentId: parentCommentId } : {}),
+            // Only the first comment of a chain replies to the fetched comment; the rest chain off each other.
+            ...(!parentCommentId && fetchedParentCommentId ? { fetchedParentCommentId } : {}),
             status,
             postDate,
             socialAccountTypes: resolved as never,
@@ -222,6 +240,18 @@ export function registerCommentTools(server: McpServer, ctx: ServerContext): voi
     },
   );
 
+  registerTool(
+    server,
+    "retry_comment",
+    {
+      title: "Retry a failed comment",
+      description: "Retry publishing a comment that ended in the ERROR state.",
+      inputSchema: { id: z.string().min(1).describe("Comment id.") },
+      annotations: { openWorldHint: true },
+    },
+    async ({ id }) => jsonResult(await ctx.client.comment.commentRetry({ id })),
+  );
+
   // --- comment imports (fetch incoming comments on a published post) ---------
 
   registerTool(
@@ -307,6 +337,40 @@ export function registerCommentTools(server: McpServer, ctx: ServerContext): voi
           socialAccountId,
           limit: limit ?? null,
           offset: offset ?? null,
+        }),
+      );
+    },
+  );
+
+  registerTool(
+    server,
+    "act_on_imported_comment",
+    {
+      title: "Moderate an imported comment",
+      description:
+        "Act on a comment fetched by a comment import — delete, hide/unhide, like/unlike, or approve/reject it. Supported actions vary by platform; DELETE and HIDE are the widely available ones.",
+      inputSchema: {
+        commentId: z.string().min(1).describe("Id of the fetched (imported) comment."),
+        action: z
+          .enum(["DELETE", "HIDE", "UNHIDE", "LIKE", "UNLIKE", "APPROVE", "REJECT"])
+          .describe("What to do with the comment."),
+        reason: z.string().optional().describe("Optional reason recorded with the action."),
+        banAuthor: z.boolean().optional().describe("Also ban the comment's author, where the platform supports it."),
+        teamId: teamIdSchema,
+      },
+      annotations: { destructiveHint: true, openWorldHint: true },
+    },
+    async ({ commentId, action, reason, banAuthor, teamId }) => {
+      const id = await resolveTeamId(ctx, teamId);
+      return jsonResult(
+        await ctx.client.comment.commentImportActionFetchedComment({
+          commentId,
+          requestBody: {
+            teamId: id,
+            action,
+            ...(reason !== undefined ? { reason } : {}),
+            ...(banAuthor ? { banAuthor: true } : {}),
+          },
         }),
       );
     },
