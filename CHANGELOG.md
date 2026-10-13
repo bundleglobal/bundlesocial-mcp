@@ -1,3 +1,10 @@
+## [1.2.1](https://github.com/bundleglobal/bundlesocial-mcp/compare/v1.2.0...v1.2.1) (2026-10-13)
+
+
+### Bug Fixes
+
+* list teams via paginated team endpoint instead of deprecated organization.teams ([098fe65](https://github.com/bundleglobal/bundlesocial-mcp/commit/098fe65a3f0d1d27b00d0b712a4b6eccc993156c))
+
 # [1.2.0](https://github.com/bundleglobal/bundlesocial-mcp/compare/v1.1.0...v1.2.0) (2026-07-30)
 
 
