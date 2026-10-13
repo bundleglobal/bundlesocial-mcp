@@ -132,7 +132,10 @@ const TEAM = {
     { id: "acc_ig", type: "INSTAGRAM", username: "acme.ig", channels: [] },
   ],
 };
-const ORG = { id: "org_test", name: "Acme", apiAccess: true, teams: [{ id: "team_test", name: "Test Team" }] };
+const ORG = { id: "org_test", name: "Acme", apiAccess: true };
+const TEAM_LIST = { items: [{ id: "team_test", name: "Test Team", socialAccounts: TEAM.socialAccounts }], total: 1 };
+const fakeTeams = (count: number, start = 0) =>
+  Array.from({ length: count }, (_, i) => ({ id: `team_${start + i}`, name: `Team ${start + i}`, socialAccounts: [] }));
 
 const servers: McpServer[] = [];
 
@@ -168,6 +171,7 @@ beforeEach(() => {
   sdk.app.appGetHealth.mockResolvedValue({ status: "ok" });
   sdk.organization.organizationGetOrganization.mockResolvedValue(ORG);
   sdk.team.teamGetTeam.mockResolvedValue(TEAM);
+  sdk.team.teamGetList.mockResolvedValue(TEAM_LIST);
 });
 
 afterAll(async () => {
@@ -291,8 +295,42 @@ describe("list_integrations", () => {
   it("falls back to the only team when none is configured", async () => {
     const client = await connect({ defaultTeamId: null });
     const { json } = await callTool(client, "list_integrations");
-    expect(sdk.organization.organizationGetOrganization).toHaveBeenCalled();
+    expect(sdk.team.teamGetList).toHaveBeenCalledWith({ offset: 0, limit: 100 });
+    expect(sdk.organization.organizationGetOrganization).not.toHaveBeenCalled();
     expect((json as { teamId: string }).teamId).toBe("team_test");
+  });
+
+  it("pages through the team list when the org has more teams than one page", async () => {
+    sdk.team.teamGetList
+      .mockResolvedValueOnce({ items: fakeTeams(100), total: 102 })
+      .mockResolvedValueOnce({ items: fakeTeams(2, 100), total: 102 });
+    const client = await connect({ defaultTeamId: null });
+    const { json, isError } = await callTool(client, "create_post", { content: "Hi", platforms: ["x"] });
+    expect(isError).toBe(true);
+    expect(sdk.team.teamGetList).toHaveBeenCalledTimes(2);
+    expect(sdk.team.teamGetList).toHaveBeenNthCalledWith(1, { offset: 0, limit: 100 });
+    expect(sdk.team.teamGetList).toHaveBeenNthCalledWith(2, { offset: 100, limit: 100 });
+    const error = (json as { error: { code: string; details: { teams: Array<{ id: string }> } } }).error;
+    expect(error.code).toBe("TEAM_ID_REQUIRED");
+    expect(error.details.teams).toHaveLength(102);
+    expect(error.details.teams[101]).toEqual({ id: "team_101", name: "Team 101" });
+  });
+
+  it("stops paging at the safety cap and warns on stderr", async () => {
+    sdk.team.teamGetList.mockImplementation(async ({ offset }: { offset: number }) => ({
+      items: fakeTeams(100, offset),
+      total: 1_000_000,
+    }));
+    const stderr = vi.spyOn(process.stderr, "write").mockImplementation(() => true);
+    try {
+      const client = await connect({ defaultTeamId: null });
+      const { json } = await callTool(client, "create_post", { content: "Hi", platforms: ["x"] });
+      expect(sdk.team.teamGetList).toHaveBeenCalledTimes(100);
+      expect((json as { error: { details: { teams: unknown[] } } }).error.details.teams).toHaveLength(10_000);
+      expect(stderr).toHaveBeenCalledWith(expect.stringContaining("team list truncated"));
+    } finally {
+      stderr.mockRestore();
+    }
   });
 });
 

@@ -31,7 +31,7 @@ Team-scoped tools take an optional `teamId` — skip it when your org has one te
 
 | Tool | Description |
 |---|---|
-| `get_organization` | Fetch the organization — id, name, API-access flag, plan limits, teams. |
+| `get_organization` | Fetch the organization — id, name, API-access flag, plan limits (use `list_teams` for teams). |
 | `get_usage` | Posts / comments / uploads usage quotas + a paginated per-account post-import usage breakdown. |
 | `get_daily_limits_usage` | One connected account's daily post/comment allowance (used/limit/remaining) for a day — check it before bulk-scheduling. |
 | `list_teams` | List teams in the organization (paginated, searchable). |

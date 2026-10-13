@@ -4,7 +4,7 @@ import type {
   SocialAccountConnectData,
   SocialAccountCreatePortalLinkData,
 } from "bundlesocial";
-import { type ServerContext, resolveTeamId } from "../client";
+import { type ServerContext, listAllTeams, resolveTeamId } from "../client";
 import { jsonResult } from "../errors";
 import { normalizePlatform, type Platform } from "../platforms";
 import { registerTool } from "../register-tool";
@@ -65,12 +65,12 @@ export function registerIntegrationTools(server: McpServer, ctx: ServerContext):
         const team = await ctx.client.team.teamGetTeam({ id });
         return jsonResult({ teamId: team.id, teamName: team.name, integrations: mapAccounts(team.socialAccounts) });
       }
-      const organization = await ctx.client.organization.organizationGetOrganization();
-      const teams = organization.teams ?? [];
+      const teams = await listAllTeams(ctx.client);
       if (teams.length === 1) {
         const team = await ctx.client.team.teamGetTeam({ id: teams[0].id });
         return jsonResult({ teamId: team.id, teamName: team.name, integrations: mapAccounts(team.socialAccounts) });
       }
+      const organization = await ctx.client.organization.organizationGetOrganization();
       const perTeam = [];
       for (const summary of teams) {
         const team = await ctx.client.team.teamGetTeam({ id: summary.id });

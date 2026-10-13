@@ -1,6 +1,6 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import pkg from "../../package.json";
-import { type ServerContext, DASHBOARD_SOCIAL_ACCOUNTS_URL } from "../client";
+import { type ServerContext, DASHBOARD_SOCIAL_ACCOUNTS_URL, listAllTeams } from "../client";
 import { errorSummary, jsonResult } from "../errors";
 import { registerTool } from "../register-tool";
 
@@ -46,12 +46,19 @@ export function registerDiagnosticsTools(server: McpServer, ctx: ServerContext):
       let organizationApiAccess: boolean | undefined;
       try {
         const organization = await ctx.client.organization.organizationGetOrganization();
-        teams = (organization.teams ?? []).map((team) => ({ id: team.id, name: team.name }));
         organizationApiAccess = organization.apiAccess;
         add("authentication", "ok", "API key is valid", { organizationId: organization.id, organizationName: organization.name ?? null });
       } catch (error) {
         add("authentication", "fail", "API key was rejected by the API", { error: errorSummary(error) });
         return finish();
+      }
+      if (!ctx.defaultTeamId) {
+        try {
+          teams = (await listAllTeams(ctx.client)).map((team) => ({ id: team.id, name: team.name }));
+        } catch (error) {
+          add("team", "fail", "Could not list the organization's teams", { error: errorSummary(error) });
+          return finish();
+        }
       }
       add(
         "api_access",

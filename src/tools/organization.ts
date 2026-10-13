@@ -17,7 +17,7 @@ export function registerOrganizationTools(server: McpServer, ctx: ServerContext)
     "get_organization",
     {
       title: "Get the organization",
-      description: "Fetch the current organization — its id, name, API-access flag, plan limits and the list of teams.",
+      description: "Fetch the current organization — its id, name, API-access flag and plan limits. Its `teams` array is deprecated (removed 2026-11-15); use `list_teams` to enumerate teams.",
       annotations: { readOnlyHint: true, openWorldHint: true },
     },
     async () => jsonResult(await ctx.client.organization.organizationGetOrganization()),
