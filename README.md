@@ -36,7 +36,7 @@ Team-scoped tools take an optional `teamId` — skip it when your org has one te
 | `get_daily_limits_usage` | One connected account's daily post/comment allowance (used/limit/remaining) for a day — check it before bulk-scheduling. |
 | `list_teams` | List teams in the organization (paginated, searchable). |
 | `get_team` | Fetch one team by id (incl. its connected integrations). |
-| `create_team` | Create a team (optionally copy another team's social accounts via `copyTeamId`). |
+| `create_team` | Create a team. |
 | `update_team` | Update a team's name/avatar — only the fields you pass change. |
 | `delete_team` | Delete a team by id (destructive). |
 

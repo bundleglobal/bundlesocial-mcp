@@ -1,0 +1,15 @@
+version: 2
+updates:
+  # Keep up with the SDK: every bundlesocial release opens a PR, and the `fix` prefix makes
+  # semantic-release publish a patch once it is merged.
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: daily
+    allow:
+      - dependency-name: bundlesocial
+    # Raise the range in package.json too, so the published minimum matches what CI tested.
+    versioning-strategy: increase
+    commit-message:
+      prefix: fix
+      include: scope

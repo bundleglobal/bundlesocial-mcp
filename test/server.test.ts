@@ -686,7 +686,7 @@ describe("organization & teams", () => {
     expect(sdk.team.teamGetTeam).toHaveBeenCalledWith({ id: "team_test" });
 
     await callTool(client, "create_team", { name: "New" });
-    expect(sdk.team.teamCreateTeam).toHaveBeenCalledWith({ requestBody: { name: "New", avatarUrl: null, copyTeamId: null } });
+    expect(sdk.team.teamCreateTeam).toHaveBeenCalledWith({ requestBody: { name: "New", avatarUrl: null } });
 
     await callTool(client, "update_team", { id: "team_test", name: "Renamed" });
     expect(sdk.team.teamUpdateTeam).toHaveBeenCalledWith({ id: "team_test", requestBody: { name: "Renamed" } });
