@@ -1,3 +1,10 @@
+## [1.2.2](https://github.com/bundleglobal/bundlesocial-mcp/compare/v1.2.1...v1.2.2) (2026-10-20)
+
+
+### Bug Fixes
+
+* drop copyTeamId from team creation and update the SDK to 2.68 ([77ee5ca](https://github.com/bundleglobal/bundlesocial-mcp/commit/77ee5cab5ee1f3b81a665e35b1b160f833fd0bb6))
+
 ## [1.2.1](https://github.com/bundleglobal/bundlesocial-mcp/compare/v1.2.0...v1.2.1) (2026-10-13)
 
 
