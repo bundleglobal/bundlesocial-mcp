@@ -42,18 +42,17 @@ export function registerTeamTools(server: McpServer, ctx: ServerContext): void {
     "create_team",
     {
       title: "Create a team",
-      description: "Create a new team in the organization. Optionally copy the connected social accounts from an existing team via `copyTeamId`.",
+      description: "Create a new team in the organization.",
       inputSchema: {
         name: z.string().min(1).describe("Team name."),
         avatarUrl: z.string().optional().describe("Optional avatar image URL."),
-        copyTeamId: z.string().optional().describe("Optional id of an existing team to copy social accounts from."),
       },
       annotations: { openWorldHint: true },
     },
-    async ({ name, avatarUrl, copyTeamId }) =>
+    async ({ name, avatarUrl }) =>
       jsonResult(
         await ctx.client.team.teamCreateTeam({
-          requestBody: { name, avatarUrl: avatarUrl ?? null, copyTeamId: copyTeamId ?? null },
+          requestBody: { name, avatarUrl: avatarUrl ?? null },
         }),
       ),
   );
