@@ -449,13 +449,24 @@ const POST: Record<Platform, OperationReference> = {
   },
   PINTEREST: {
     dataKey: "data.PINTEREST",
-    summary: "Create a Pin on a board.",
+    summary: "Create a Pin (image, video or 2-5 image carousel) on a board.",
     fields: [
       { name: "boardName", type: "string", required: true, notes: "The board to pin to." },
-      { name: "uploadIds", type: "string[]", required: false, notes: "One image (or video)." },
+      {
+        name: "uploadIds",
+        type: "string[]",
+        required: false,
+        notes: "One image or video, or 2-5 images (same aspect ratio, no video) for a carousel Pin. Order = slide order.",
+      },
       { name: "text", type: "string", required: false, notes: "The Pin title." },
       { name: "description", type: "string", required: false, notes: "Pin description." },
       { name: "link", type: "string (URL)", required: false, notes: "Where the Pin links to." },
+      {
+        name: "carouselItems",
+        type: "{ uploadId: string, title?: string, description?: string, link?: string }[]",
+        required: false,
+        notes: "Per-slide overrides for a carousel Pin, matched by uploadId. Missing fields use the Pin values.",
+      },
       { name: "altText", type: "string", required: false, notes: "Image alt text." },
       { name: "note", type: "string", required: false, notes: "Private note (not public)." },
       { name: "thumbnail", type: "string (URL)", required: false, notes: "Cover image." },
