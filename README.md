@@ -55,8 +55,9 @@ Team-scoped tools take an optional `teamId` — skip it when your org has one te
 | `get_integration_by_type` | Fetch the connected social account for a platform on the team. |
 | `copy_integration` | Copy connected accounts between teams (`fromTeamId` → `toTeamId`). |
 | `list_integrations_to_delete` | List social accounts scheduled for deletion (paginated). |
-| `list_integration_tools` | List the platform helper methods callable via `trigger_integration_tool` (`writes: true` marks the ones that change a post). |
-| `trigger_integration_tool` | Call a helper: subreddit flairs/requirements, YouTube categories/playlists/regions, LinkedIn mentions, Instagram locations/audio/business discovery, Google Business categories, TikTok trending music, TikTok Spark Ads codes (`tiktok:ad-authorization`, `tiktok:enable-ad-authorization`, `tiktok:extend-ad-authorization`, `tiktok:disable-ad-authorization`). Use it to discover values the API needs. |
+| `list_integration_tools` | List the read-only platform helper methods callable via `trigger_integration_tool`. |
+| `trigger_integration_tool` | Call a helper: subreddit flairs/requirements, YouTube categories/playlists/regions, LinkedIn mentions, Instagram locations/audio/business discovery, Google Business categories, TikTok trending music, the Spark Ads code of a TikTok post (`tiktok:ad-authorization`). Use it to discover values the API needs. Read-only. |
+| `manage_tiktok_ad_authorization` | Turn TikTok Spark Ads authorization of a post on (`enable`), extend it (`extend`) or turn it off (`disable`). `enable` and `extend` return the code to share with an advertiser. |
 
 ### Posts
 

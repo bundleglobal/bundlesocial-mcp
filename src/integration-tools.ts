@@ -2,11 +2,11 @@ import type { Bundlesocial } from "bundlesocial";
 import { McpToolError } from "./errors";
 
 /**
- * Curated platform helpers — mostly read-only "what value goes here?" lookups
+ * Curated read-only platform helpers — "what value goes here?" lookups
  * (subreddit flairs, YouTube categories, LinkedIn mentions, Google Business
- * categories, etc.), plus a few post actions flagged with `writes: true`. The
- * platform is implied by the method name; all are team-scoped, with extra
- * parameters supplied as a JSON object.
+ * categories, etc.). The platform is implied by the method name; all are
+ * team-scoped, with extra parameters supplied as a JSON object. Anything that
+ * changes state gets its own MCP tool, so this one can stay read-only.
  */
 export interface IntegrationTool {
   id: string;
@@ -14,12 +14,10 @@ export interface IntegrationTool {
   description: string;
   requiredParams?: string[];
   optionalParams?: string[];
-  /** Changes state on the platform (not a read-only lookup). */
-  writes?: boolean;
   run: (client: Bundlesocial, teamId: string, params: Record<string, unknown>) => Promise<unknown>;
 }
 
-const TIKTOK_AUTHORIZATION_DAYS = [7, 30, 60, 180, 365] as const;
+export const TIKTOK_AUTHORIZATION_DAYS = [7, 30, 60, 180, 365] as const;
 type TiktokAuthorizationDays = (typeof TIKTOK_AUTHORIZATION_DAYS)[number];
 
 /** The TikTok post is addressed by exactly one of `postId` (bundle.social) or `platformPostId` (TikTok item_id). */
@@ -171,54 +169,10 @@ export const INTEGRATION_TOOLS: IntegrationTool[] = [
     id: "tiktok:ad-authorization",
     platform: "TIKTOK",
     description:
-      "Get the Spark Ads authorization code of a TikTok post with its validity window and status (NOT_USED, IN_USE, EXPIRED). Pass exactly one of postId (bundle.social post) or platformPostId (TikTok item_id). Fails if ad authorization was never enabled for the post.",
+      "Get the Spark Ads authorization code of a TikTok post with its validity window and status (NOT_USED, IN_USE, EXPIRED). Pass exactly one of postId (bundle.social post) or platformPostId (TikTok item_id). Fails if ad authorization was never enabled for the post; turn it on with manage_tiktok_ad_authorization.",
     optionalParams: ["postId", "platformPostId"],
     run: (client, teamId, p) =>
       client.misc.miscTiktokGetAdAuthorization({ teamId, ...tiktokPostRef("tiktok:ad-authorization", p) }),
-  },
-  {
-    id: "tiktok:enable-ad-authorization",
-    platform: "TIKTOK",
-    description:
-      "Turn on ad authorization for a public TikTok post and return its Spark Ads code (share it with the advertiser). Accepts TikTok's Advertising Content Terms for the post. Pass exactly one of postId or platformPostId; authorizationDays 7/30/60/180/365 (default 30).",
-    optionalParams: ["postId", "platformPostId", "authorizationDays"],
-    writes: true,
-    run: (client, teamId, p) =>
-      client.misc.miscTiktokEnableAdAuthorization({
-        requestBody: {
-          teamId,
-          ...tiktokPostRef("tiktok:enable-ad-authorization", p),
-          ...tiktokAuthorizationDays("tiktok:enable-ad-authorization", p),
-        },
-      }),
-  },
-  {
-    id: "tiktok:extend-ad-authorization",
-    platform: "TIKTOK",
-    description:
-      "Add days (authorizationDays 7/30/60/180/365, default 30) to a TikTok post's Spark Ads code, or issue a new code if the old one was deleted. Ad authorization must already be enabled. Pass exactly one of postId or platformPostId.",
-    optionalParams: ["postId", "platformPostId", "authorizationDays"],
-    writes: true,
-    run: (client, teamId, p) =>
-      client.misc.miscTiktokExtendAdAuthorization({
-        requestBody: {
-          teamId,
-          ...tiktokPostRef("tiktok:extend-ad-authorization", p),
-          ...tiktokAuthorizationDays("tiktok:extend-ad-authorization", p),
-        },
-      }),
-  },
-  {
-    id: "tiktok:disable-ad-authorization",
-    platform: "TIKTOK",
-    description:
-      "Turn off ad authorization for a TikTok post. TikTok refuses this while the post runs in an active Spark Ad (pause those ads first). Pass exactly one of postId or platformPostId.",
-    optionalParams: ["postId", "platformPostId"],
-    writes: true,
-    run: (client, teamId, p) =>
-      client.misc.miscTiktokDisableAdAuthorization({
-        requestBody: { teamId, ...tiktokPostRef("tiktok:disable-ad-authorization", p) },
-      }),
   },
 ];
 
@@ -229,8 +183,27 @@ export function listIntegrationTools() {
     description: tool.description,
     requiredParams: tool.requiredParams ?? [],
     optionalParams: tool.optionalParams ?? [],
-    writes: tool.writes ?? false,
   }));
+}
+
+export type TiktokAdAuthorizationAction = "enable" | "extend" | "disable";
+
+/** Writes behind manage_tiktok_ad_authorization: enable/extend return the Spark Ads code, disable turns it off. */
+export function runTiktokAdAuthorization(
+  client: Bundlesocial,
+  teamId: string,
+  action: TiktokAdAuthorizationAction,
+  params: Record<string, unknown>,
+): Promise<unknown> {
+  const method = `tiktok:${action}-ad-authorization`;
+  const post = tiktokPostRef(method, params);
+  if (action === "disable") {
+    return client.misc.miscTiktokDisableAdAuthorization({ requestBody: { teamId, ...post } });
+  }
+  const requestBody = { teamId, ...post, ...tiktokAuthorizationDays(method, params) };
+  return action === "enable"
+    ? client.misc.miscTiktokEnableAdAuthorization({ requestBody })
+    : client.misc.miscTiktokExtendAdAuthorization({ requestBody });
 }
 
 export async function runIntegrationTool(

@@ -571,7 +571,7 @@ const NOTES: Partial<Record<Platform, string[]>> = {
     "`isGhostPost: true` publishes a text-only post that Threads archives after 24 hours; media, poll, GIF, link attachment, topic tag, reply control, country restrictions and Instagram Story cross-sharing are rejected with it.",
   ],
   TIKTOK: [
-    'Spark Ads: once a post is public, trigger_integration_tool method "tiktok:enable-ad-authorization" returns its ad authorization code for an advertiser; "tiktok:ad-authorization" reads its status, "tiktok:extend-ad-authorization" / "tiktok:disable-ad-authorization" manage it.',
+    'Spark Ads: once a post is public, manage_tiktok_ad_authorization with action "enable" returns its ad authorization code for an advertiser ("extend" / "disable" manage it); trigger_integration_tool method "tiktok:ad-authorization" reads its status.',
   ],
 };
 
