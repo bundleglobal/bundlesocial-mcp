@@ -96,7 +96,7 @@ export function registerIntegrationTools(server: McpServer, ctx: ServerContext):
           .record(z.string(), z.unknown())
           .optional()
           .describe(
-            "Advanced provider flags, e.g. {\"instagramConnectionMethod\":\"INSTAGRAM\",\"withBusinessScope\":true,\"disableAutoLogin\":true,\"forceBrowserOAuth\":true,\"tiktokForceLogin\":true}. `withBusinessScope` also unlocks YouTube monetization analytics; `tiktokForceLogin` (experimental) forces TikTok's account picker when it keeps reusing the wrong active account.",
+            "Advanced provider flags, e.g. {\"instagramConnectionMethod\":\"INSTAGRAM\",\"withBusinessScope\":true,\"disableAutoLogin\":true,\"forceBrowserOAuth\":true,\"tiktokForceLogin\":true}. `withBusinessScope` also unlocks YouTube monetization analytics; `tiktokForceLogin` (experimental) forces TikTok's account picker when it keeps reusing the wrong active account; `snapchatConnectionMethod` \"PERSONAL\" (default, the login's own Public Profile) or \"BUSINESS\" (lists the Public Profiles of the login's Snap Business organizations — pick one with set_integration_channel).",
           ),
       },
       annotations: { openWorldHint: true },
@@ -134,7 +134,7 @@ export function registerIntegrationTools(server: McpServer, ctx: ServerContext):
     "set_integration_channel",
     {
       title: "Set a social account's channel/page",
-      description: "Select the page/channel for a connected account (needed for FACEBOOK, INSTAGRAM, LINKEDIN, YOUTUBE, GOOGLE_BUSINESS). Get channel ids from list_integrations / refresh_integration_channels.",
+      description: "Select the page/channel for a connected account (needed for FACEBOOK, INSTAGRAM, LINKEDIN, YOUTUBE, GOOGLE_BUSINESS, and SNAPCHAT connected with snapchatConnectionMethod BUSINESS). Get channel ids from list_integrations / refresh_integration_channels.",
       inputSchema: { platform: platformSchema, channelId: z.string().min(1).describe("Channel/page id to select."), teamId: teamIdSchema },
       annotations: { openWorldHint: true },
     },
@@ -149,7 +149,7 @@ export function registerIntegrationTools(server: McpServer, ctx: ServerContext):
     "unset_integration_channel",
     {
       title: "Clear a social account's channel/page",
-      description: "Clear the selected page/channel for a connected account (FACEBOOK, INSTAGRAM, LINKEDIN, YOUTUBE, GOOGLE_BUSINESS) while keeping the authorization.",
+      description: "Clear the selected page/channel for a connected account (FACEBOOK, INSTAGRAM, LINKEDIN, YOUTUBE, GOOGLE_BUSINESS, SNAPCHAT) while keeping the authorization.",
       inputSchema: { platform: platformSchema, teamId: teamIdSchema },
       annotations: { openWorldHint: true },
     },
@@ -190,7 +190,7 @@ export function registerIntegrationTools(server: McpServer, ctx: ServerContext):
           .record(z.string(), z.unknown())
           .optional()
           .describe(
-            "Advanced portal options — branding (logoUrl, userLogoUrl, userName, goBackButtonText, hidePoweredBy, hideGoBackButton, hideUserLogo, hideUserName, hideLanguageSwitcher, showModalOnConnectSuccess, language, maxSocialAccountsConnected) and the same OAuth flags as connect_integration (serverUrl, instagramConnectionMethod, withBusinessScope, disableAutoLogin, forceBrowserOAuth, tiktokForceLogin).",
+            "Advanced portal options — branding (logoUrl, userLogoUrl, userName, goBackButtonText, hidePoweredBy, hideGoBackButton, hideUserLogo, hideUserName, hideLanguageSwitcher, showModalOnConnectSuccess, language, maxSocialAccountsConnected) and the same OAuth flags as connect_integration (serverUrl, instagramConnectionMethod, snapchatConnectionMethod, withBusinessScope, disableAutoLogin, forceBrowserOAuth, tiktokForceLogin).",
           ),
       },
       annotations: { openWorldHint: true },

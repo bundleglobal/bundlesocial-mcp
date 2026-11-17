@@ -18,7 +18,7 @@ export function registerIntegrationToolHelpers(server: McpServer, ctx: ServerCon
     {
       title: "List integration helper tools",
       description:
-        "List the read-only platform helper tools callable via trigger_integration_tool — e.g. fetch subreddit flairs, YouTube categories/playlists/regions, LinkedIn mentions, Instagram locations, Google Business categories, TikTok trending music. Each entry has a `method` id and the params it accepts. Use these to discover values the API needs (flair ids, category ids, mention URNs, …).",
+        "List the platform helper tools callable via trigger_integration_tool — e.g. fetch subreddit flairs, YouTube categories/playlists/regions, LinkedIn mentions, Instagram locations, Google Business categories, TikTok trending music, TikTok Spark Ads codes. Each entry has a `method` id, the params it accepts and `writes` (true for the few that change the post, e.g. tiktok:enable-ad-authorization). Use these to discover values the API needs (flair ids, category ids, mention URNs, …).",
       annotations: { readOnlyHint: true, openWorldHint: true },
     },
     async () => jsonResult({ tools: listIntegrationTools() }),
@@ -30,13 +30,13 @@ export function registerIntegrationToolHelpers(server: McpServer, ctx: ServerCon
     {
       title: "Call an integration helper tool",
       description:
-        'Call one of the platform helper tools (see list_integration_tools), e.g. method "reddit:flairs" with params {"subreddit":"r/test"}. Returns the raw result.',
+        'Call one of the platform helper tools (see list_integration_tools), e.g. method "reddit:flairs" with params {"subreddit":"r/test"}. Returns the raw result. Most are read-only lookups; methods listed with `writes: true` (TikTok enable/extend/disable ad authorization) change the post on the platform.',
       inputSchema: {
         method: z.string().min(1).describe('Tool method id, e.g. "reddit:flairs", "youtube:categories", "linkedin:mentions" (call list_integration_tools first).'),
         params: z.record(z.string(), z.unknown()).optional().describe("Parameters for the tool as a JSON object, e.g. {\"subreddit\":\"r/test\"}."),
         teamId: teamIdSchema,
       },
-      annotations: { readOnlyHint: true, openWorldHint: true },
+      annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: true },
     },
     async ({ method, params, teamId }) => {
       const id = await resolveTeamId(ctx, teamId);

@@ -45,9 +45,9 @@ Team-scoped tools take an optional `teamId` — skip it when your org has one te
 | Tool | Description |
 |---|---|
 | `list_integrations` | List connected social accounts for a team (ids, platform types, channels). Without a team, lists every team. |
-| `connect_integration` | Start an OAuth connect flow — returns a `url` to redirect the user to. `serverUrl` for Mastodon/Bluesky; `options` for provider flags. |
+| `connect_integration` | Start an OAuth connect flow — returns a `url` to redirect the user to. `serverUrl` for Mastodon/Bluesky; `options` for provider flags (e.g. `snapchatConnectionMethod: "BUSINESS"` for Snap Business Public Profiles). |
 | `disconnect_integration` | Disconnect a social account of a given platform from the team (destructive). |
-| `set_integration_channel` / `unset_integration_channel` | Pick / clear the channel/page to post to (FACEBOOK, INSTAGRAM, LINKEDIN, YOUTUBE, GBP). |
+| `set_integration_channel` / `unset_integration_channel` | Pick / clear the channel/page to post to (FACEBOOK, INSTAGRAM, LINKEDIN, YOUTUBE, GBP, and SNAPCHAT Business profiles). |
 | `refresh_integration_channels` | Re-fetch the available channels (DISCORD, SLACK, REDDIT, PINTEREST, …). |
 | `create_integration_portal_link` | Create a bundle.social-hosted portal link the user can open to connect/manage accounts — returns a `url`. |
 | `check_integration_connection` | Run an on-demand connection/disconnect health check for a platform's account. |
@@ -55,8 +55,8 @@ Team-scoped tools take an optional `teamId` — skip it when your org has one te
 | `get_integration_by_type` | Fetch the connected social account for a platform on the team. |
 | `copy_integration` | Copy connected accounts between teams (`fromTeamId` → `toTeamId`). |
 | `list_integrations_to_delete` | List social accounts scheduled for deletion (paginated). |
-| `list_integration_tools` | List the read-only platform helper methods callable via `trigger_integration_tool`. |
-| `trigger_integration_tool` | Call a helper: subreddit flairs/requirements, YouTube categories/playlists/regions, LinkedIn mentions, Instagram locations/audio/business discovery, Google Business categories, TikTok trending music. Use it to discover values the API needs. |
+| `list_integration_tools` | List the platform helper methods callable via `trigger_integration_tool` (`writes: true` marks the ones that change a post). |
+| `trigger_integration_tool` | Call a helper: subreddit flairs/requirements, YouTube categories/playlists/regions, LinkedIn mentions, Instagram locations/audio/business discovery, Google Business categories, TikTok trending music, TikTok Spark Ads codes (`tiktok:ad-authorization`, `tiktok:enable-ad-authorization`, `tiktok:extend-ad-authorization`, `tiktok:disable-ad-authorization`). Use it to discover values the API needs. |
 
 ### Posts
 

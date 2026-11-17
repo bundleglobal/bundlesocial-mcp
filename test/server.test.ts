@@ -95,6 +95,10 @@ const mocks = vi.hoisted(() => {
       miscRedditGetSubredditFlairs: vi.fn(),
       miscYoutubeGetVideoCategories: vi.fn(),
       miscLinkedinGetTags: vi.fn(),
+      miscTiktokGetAdAuthorization: vi.fn(),
+      miscTiktokEnableAdAuthorization: vi.fn(),
+      miscTiktokExtendAdAuthorization: vi.fn(),
+      miscTiktokDisableAdAuthorization: vi.fn(),
     },
   };
   return { client };
@@ -640,6 +644,46 @@ describe("integration tool helpers", () => {
     const { json, isError } = await callTool(client, "trigger_integration_tool", { method: "reddit:flairs" });
     expect(isError).toBe(true);
     expect(json).toMatchObject({ error: { code: "MISSING_PARAMS" } });
+  });
+
+  it("tiktok ad authorization tools address the post by postId or platformPostId", async () => {
+    sdk.misc.miscTiktokGetAdAuthorization.mockResolvedValue({ authCode: "#code", status: "NOT_USED" });
+    sdk.misc.miscTiktokEnableAdAuthorization.mockResolvedValue({ authCode: "#code" });
+    sdk.misc.miscTiktokExtendAdAuthorization.mockResolvedValue({ authCode: "#code" });
+    sdk.misc.miscTiktokDisableAdAuthorization.mockResolvedValue({ success: true });
+    const client = await connect();
+    const { json } = await callTool(client, "trigger_integration_tool", { method: "tiktok:ad-authorization", params: { postId: "post_1" } });
+    expect(sdk.misc.miscTiktokGetAdAuthorization).toHaveBeenCalledWith({ teamId: "team_test", postId: "post_1" });
+    expect(json).toMatchObject({ authCode: "#code", status: "NOT_USED" });
+    await callTool(client, "trigger_integration_tool", {
+      method: "tiktok:enable-ad-authorization",
+      params: { platformPostId: "7300000000000000000", authorizationDays: 60 },
+    });
+    expect(sdk.misc.miscTiktokEnableAdAuthorization).toHaveBeenCalledWith({
+      requestBody: { teamId: "team_test", platformPostId: "7300000000000000000", authorizationDays: 60 },
+    });
+    await callTool(client, "trigger_integration_tool", { method: "tiktok:extend-ad-authorization", params: { postId: "post_1" } });
+    expect(sdk.misc.miscTiktokExtendAdAuthorization).toHaveBeenCalledWith({ requestBody: { teamId: "team_test", postId: "post_1" } });
+    await callTool(client, "trigger_integration_tool", { method: "tiktok:disable-ad-authorization", params: { postId: "post_1" } });
+    expect(sdk.misc.miscTiktokDisableAdAuthorization).toHaveBeenCalledWith({ requestBody: { teamId: "team_test", postId: "post_1" } });
+  });
+
+  it("tiktok ad authorization tools reject a missing or doubled post reference and bad days", async () => {
+    const client = await connect();
+    const none = await callTool(client, "trigger_integration_tool", { method: "tiktok:ad-authorization" });
+    expect(none.isError).toBe(true);
+    expect(none.json).toMatchObject({ error: { code: "INVALID_PARAMS" } });
+    const both = await callTool(client, "trigger_integration_tool", {
+      method: "tiktok:disable-ad-authorization",
+      params: { postId: "post_1", platformPostId: "730" },
+    });
+    expect(both.json).toMatchObject({ error: { code: "INVALID_PARAMS" } });
+    const days = await callTool(client, "trigger_integration_tool", {
+      method: "tiktok:enable-ad-authorization",
+      params: { postId: "post_1", authorizationDays: 14 },
+    });
+    expect(days.json).toMatchObject({ error: { code: "INVALID_PARAMS" } });
+    expect(sdk.misc.miscTiktokEnableAdAuthorization).not.toHaveBeenCalled();
   });
 
   it("trigger_integration_tool errors on an unknown method", async () => {
