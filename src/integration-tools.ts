@@ -2,11 +2,11 @@ import type { Bundlesocial } from "bundlesocial";
 import { McpToolError } from "./errors";
 
 /**
- * Curated, read-only "what value goes here?" helpers — the bundle.social
- * equivalent of fetching subreddit flairs, YouTube categories, LinkedIn
- * mentions, Google Business categories, etc. The platform is implied by the
- * method name; all are team-scoped, with extra parameters supplied as a JSON
- * object.
+ * Curated read-only platform helpers — "what value goes here?" lookups
+ * (subreddit flairs, YouTube categories, LinkedIn mentions, Google Business
+ * categories, etc.). The platform is implied by the method name; all are
+ * team-scoped, with extra parameters supplied as a JSON object. Anything that
+ * changes state gets its own MCP tool, so this one can stay read-only.
  */
 export interface IntegrationTool {
   id: string;
@@ -15,6 +15,36 @@ export interface IntegrationTool {
   requiredParams?: string[];
   optionalParams?: string[];
   run: (client: Bundlesocial, teamId: string, params: Record<string, unknown>) => Promise<unknown>;
+}
+
+export const TIKTOK_AUTHORIZATION_DAYS = [7, 30, 60, 180, 365] as const;
+type TiktokAuthorizationDays = (typeof TIKTOK_AUTHORIZATION_DAYS)[number];
+
+/** The TikTok post is addressed by exactly one of `postId` (bundle.social) or `platformPostId` (TikTok item_id). */
+function tiktokPostRef(method: string, p: Record<string, unknown>): { postId: string } | { platformPostId: string } {
+  const postId = p.postId ? String(p.postId) : undefined;
+  const platformPostId = p.platformPostId ? String(p.platformPostId) : undefined;
+  if (Boolean(postId) === Boolean(platformPostId)) {
+    throw new McpToolError(
+      "INVALID_PARAMS",
+      `Integration tool "${method}" needs exactly one of postId (bundle.social post id) or platformPostId (TikTok item_id).`,
+      { method },
+    );
+  }
+  return postId ? { postId } : { platformPostId: platformPostId as string };
+}
+
+function tiktokAuthorizationDays(method: string, p: Record<string, unknown>): { authorizationDays?: TiktokAuthorizationDays } {
+  if (p.authorizationDays === undefined || p.authorizationDays === null || p.authorizationDays === "") return {};
+  const days = Number(p.authorizationDays);
+  if (!(TIKTOK_AUTHORIZATION_DAYS as readonly number[]).includes(days)) {
+    throw new McpToolError(
+      "INVALID_PARAMS",
+      `Integration tool "${method}": authorizationDays must be one of ${TIKTOK_AUTHORIZATION_DAYS.join(", ")}.`,
+      { method, authorizationDays: p.authorizationDays },
+    );
+  }
+  return { authorizationDays: days as TiktokAuthorizationDays };
 }
 
 export const INTEGRATION_TOOLS: IntegrationTool[] = [
@@ -135,6 +165,15 @@ export const INTEGRATION_TOOLS: IntegrationTool[] = [
         ...(p.genre ? { genre: String(p.genre) as never } : {}),
       }),
   },
+  {
+    id: "tiktok:ad-authorization",
+    platform: "TIKTOK",
+    description:
+      "Get the Spark Ads authorization code of a TikTok post with its validity window and status (NOT_USED, IN_USE, EXPIRED). Pass exactly one of postId (bundle.social post) or platformPostId (TikTok item_id). Fails if ad authorization was never enabled for the post; turn it on with manage_tiktok_ad_authorization.",
+    optionalParams: ["postId", "platformPostId"],
+    run: (client, teamId, p) =>
+      client.misc.miscTiktokGetAdAuthorization({ teamId, ...tiktokPostRef("tiktok:ad-authorization", p) }),
+  },
 ];
 
 export function listIntegrationTools() {
@@ -145,6 +184,26 @@ export function listIntegrationTools() {
     requiredParams: tool.requiredParams ?? [],
     optionalParams: tool.optionalParams ?? [],
   }));
+}
+
+export type TiktokAdAuthorizationAction = "enable" | "extend" | "disable";
+
+/** Writes behind manage_tiktok_ad_authorization: enable/extend return the Spark Ads code, disable turns it off. */
+export function runTiktokAdAuthorization(
+  client: Bundlesocial,
+  teamId: string,
+  action: TiktokAdAuthorizationAction,
+  params: Record<string, unknown>,
+): Promise<unknown> {
+  const method = `tiktok:${action}-ad-authorization`;
+  const post = tiktokPostRef(method, params);
+  if (action === "disable") {
+    return client.misc.miscTiktokDisableAdAuthorization({ requestBody: { teamId, ...post } });
+  }
+  const requestBody = { teamId, ...post, ...tiktokAuthorizationDays(method, params) };
+  return action === "enable"
+    ? client.misc.miscTiktokEnableAdAuthorization({ requestBody })
+    : client.misc.miscTiktokExtendAdAuthorization({ requestBody });
 }
 
 export async function runIntegrationTool(

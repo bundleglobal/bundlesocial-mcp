@@ -148,9 +148,16 @@ const POST: Record<Platform, OperationReference> = {
   },
   THREADS: {
     dataKey: "data.THREADS",
-    summary: "Post to Threads.",
+    summary: "Post to Threads (optionally a ghost post that Threads archives after 24 hours).",
     fields: [
       { name: "text", type: "string", required: false, notes: "~500 chars." },
+      {
+        name: "isGhostPost",
+        type: "boolean",
+        required: false,
+        notes:
+          "Publish a text-only ghost post that Threads archives after 24 hours. Rejects uploadIds/mediaItems, poll, gif, linkAttachment, topicTag, replyControl, allowlistedCountryCodes and crosspostToInstagramStory.",
+      },
       { name: "uploadIds", type: "string[]", required: false, notes: "Up to ~10 images, or 1 video." },
       {
         name: "mediaItems",
@@ -357,7 +364,13 @@ const POST: Record<Platform, OperationReference> = {
       { name: "uploadIds", type: "string[]", required: false, notes: "One video." },
       { name: "text", type: "string", required: false, notes: "The video TITLE (the post `title` field also maps here)." },
       { name: "description", type: "string", required: false, notes: "Video description." },
-      { name: "thumbnail", type: "string (URL)", required: false, notes: "Custom thumbnail (`type: VIDEO`)." },
+      {
+        name: "thumbnail",
+        type: "string (URL)",
+        required: false,
+        notes:
+          "Custom thumbnail (`type: VIDEO`). Set after YouTube finishes processing the video; track it via `thumbnailStatus` (PENDING / APPLIED / FAILED) in the post's external data.",
+      },
       { name: "privacy", type: "PUBLIC | UNLISTED | PRIVATE", required: false, notes: "Visibility." },
       {
         name: "defaultLanguage",
@@ -550,9 +563,16 @@ const NOTES: Partial<Record<Platform, string[]>> = {
   GOOGLE_BUSINESS: ["Set the location up in the dashboard first; details/categories/hours are managed via integration helper tools."],
   SNAPCHAT: [
     "Requires a Snapchat Public Profile. Stories take an image or a video; Spotlights are video-only.",
+    'connect_integration with options {"snapchatConnectionMethod":"BUSINESS"} lists the Public Profiles of the Snap Business organizations the login belongs to; pick one with set_integration_channel. PERSONAL (default) connects the login\'s own Public Profile.',
     "No comments API surface for Snapchat.",
   ],
-  THREADS: ["Polls, GIFs and link attachments are mutually exclusive with media — Threads only allows them on text-only posts."],
+  THREADS: [
+    "Polls, GIFs and link attachments are mutually exclusive with media — Threads only allows them on text-only posts.",
+    "`isGhostPost: true` publishes a text-only post that Threads archives after 24 hours; media, poll, GIF, link attachment, topic tag, reply control, country restrictions and Instagram Story cross-sharing are rejected with it.",
+  ],
+  TIKTOK: [
+    'Spark Ads: once a post is public, manage_tiktok_ad_authorization with action "enable" returns its ad authorization code for an advertiser ("extend" / "disable" manage it); trigger_integration_tool method "tiktok:ad-authorization" reads its status.',
+  ],
 };
 
 /** General media guidance that applies to every platform's `uploadIds`. */
