@@ -1,3 +1,10 @@
+# [1.3.0](https://github.com/bundleglobal/bundlesocial-mcp/compare/v1.2.3...v1.3.0) (2026-11-18)
+
+
+### Features
+
+* TikTok ad authorization, Threads ghost posts and Snapchat Business profiles ([#3](https://github.com/bundleglobal/bundlesocial-mcp/issues/3)) ([b678012](https://github.com/bundleglobal/bundlesocial-mcp/commit/b6780124b9e0962d551d6c818102fdb99012fccb))
+
 ## [1.2.3](https://github.com/bundleglobal/bundlesocial-mcp/compare/v1.2.2...v1.2.3) (2026-11-04)
 
 
