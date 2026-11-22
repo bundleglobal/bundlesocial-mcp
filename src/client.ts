@@ -5,8 +5,12 @@ export const DEFAULT_API_URL = "https://api.bundle.social";
 export const DASHBOARD_API_KEYS_URL = "https://bundle.social/dashboard/organization/api-keys";
 export const DASHBOARD_SOCIAL_ACCOUNTS_URL = "https://bundle.social/dashboard/general/social-accounts";
 
+/** stdio = local process on the user's machine; hosted = shared remote server (no local file access). */
+export type ServerMode = "stdio" | "hosted";
+
 export interface ServerContext {
   client: Bundlesocial;
+  mode: ServerMode;
   /** Team id from BUNDLESOCIAL_TEAM_ID / --team-id, if configured. */
   defaultTeamId?: string;
 }
@@ -34,8 +38,13 @@ export async function listAllTeams(client: Bundlesocial): Promise<TeamListItem[]
   return teams;
 }
 
-export function createClient(apiKey: string, apiUrl: string = DEFAULT_API_URL): Bundlesocial {
-  return new Bundlesocial(apiKey, { ...OpenAPI, BASE: apiUrl });
+/** `clientId` goes out as `x-bundle-client` so the API can count MCP usage, e.g. "mcp/1.4.0". */
+export function createClient(apiKey: string, apiUrl: string = DEFAULT_API_URL, clientId?: string): Bundlesocial {
+  return new Bundlesocial(apiKey, {
+    ...OpenAPI,
+    BASE: apiUrl,
+    ...(clientId ? { HEADERS: { "x-bundle-client": clientId } } : {}),
+  });
 }
 
 /**

@@ -28,6 +28,13 @@
   "bin": {
     "bundlesocial-mcp": "./dist/index.js"
   },
+  "exports": {
+    ".": {
+      "types": "./dist/lib.d.ts",
+      "import": "./dist/lib.js"
+    },
+    "./package.json": "./package.json"
+  },
   "files": [
     "dist/**",
     "server.json",

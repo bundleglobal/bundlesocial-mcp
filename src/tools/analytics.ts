@@ -109,7 +109,7 @@ export function registerAnalyticsTools(server: McpServer, ctx: ServerContext): v
         platform: z.string().optional().describe("Platform name/alias to refresh a social-account's analytics for (used when postId/importedPostId are omitted)."),
         teamId: teamIdSchema,
       },
-      annotations: { openWorldHint: true },
+      annotations: { destructiveHint: true, openWorldHint: true },
     },
     async ({ postId, importedPostId, platform, teamId }) => {
       if (postId || importedPostId) {

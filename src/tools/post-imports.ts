@@ -27,7 +27,7 @@ export function registerPostImportTools(server: McpServer, ctx: ServerContext): 
         mediaType: z.enum(["VIDEO", "IMAGE"]).optional().describe("Restrict to one media type."),
         teamId: z.string().min(1).optional().describe("bundle.social team id. Optional when the organization has a single team or BUNDLESOCIAL_TEAM_ID is configured."),
       },
-      annotations: { openWorldHint: true },
+      annotations: { destructiveHint: true, openWorldHint: true },
     },
     async ({ platform, count, withAnalytics, importCarousels, surface, mediaType, teamId }) => {
       const id = await resolveTeamId(ctx, teamId);
@@ -125,7 +125,7 @@ export function registerPostImportTools(server: McpServer, ctx: ServerContext): 
         importId: z.string().min(1).describe("Post import id."),
         teamId: z.string().min(1).optional().describe("bundle.social team id. Optional when the organization has a single team or BUNDLESOCIAL_TEAM_ID is configured."),
       },
-      annotations: { openWorldHint: true },
+      annotations: { destructiveHint: true, openWorldHint: true },
     },
     async ({ importId, teamId }) => {
       const id = await resolveTeamId(ctx, teamId);

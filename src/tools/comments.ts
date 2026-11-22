@@ -69,7 +69,7 @@ export function registerCommentTools(server: McpServer, ctx: ServerContext): voi
         draft: z.boolean().optional().default(false).describe("If true, create the comment(s) as DRAFT instead of posting."),
         teamId: teamIdSchema,
       },
-      annotations: { openWorldHint: true },
+      annotations: { destructiveHint: true, openWorldHint: true },
     },
     async ({ postId, importedPostId, fetchedParentCommentId, content, platforms, date, delayMinutes, draft, teamId }) => {
       const id = await resolveTeamId(ctx, teamId);
@@ -202,7 +202,7 @@ export function registerCommentTools(server: McpServer, ctx: ServerContext): voi
           .optional()
           .describe('Advanced: the full comment `data` object keyed by platform, e.g. {"LINKEDIN":{"text":"new"}}.'),
       },
-      annotations: { openWorldHint: true },
+      annotations: { destructiveHint: true, openWorldHint: true },
     },
     async ({ id, title, date, status, content, platforms, data }) => {
       const normalized = assertCommentPlatforms((platforms ?? []).map(normalizePlatform));
@@ -247,7 +247,7 @@ export function registerCommentTools(server: McpServer, ctx: ServerContext): voi
       title: "Retry a failed comment",
       description: "Retry publishing a comment that ended in the ERROR state.",
       inputSchema: { id: z.string().min(1).describe("Comment id.") },
-      annotations: { openWorldHint: true },
+      annotations: { destructiveHint: true, openWorldHint: true },
     },
     async ({ id }) => jsonResult(await ctx.client.comment.commentRetry({ id })),
   );
@@ -266,7 +266,7 @@ export function registerCommentTools(server: McpServer, ctx: ServerContext): voi
         platform: z.string().min(1).describe("Platform name/alias to import comments from."),
         teamId: teamIdSchema,
       },
-      annotations: { openWorldHint: true },
+      annotations: { destructiveHint: true, openWorldHint: true },
     },
     async ({ postId, platform, teamId }) => {
       const id = await resolveTeamId(ctx, teamId);

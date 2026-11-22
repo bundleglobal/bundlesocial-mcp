@@ -47,7 +47,7 @@ export function registerTeamTools(server: McpServer, ctx: ServerContext): void {
         name: z.string().min(1).describe("Team name."),
         avatarUrl: z.string().optional().describe("Optional avatar image URL."),
       },
-      annotations: { openWorldHint: true },
+      annotations: { destructiveHint: true, openWorldHint: true },
     },
     async ({ name, avatarUrl }) =>
       jsonResult(
@@ -68,7 +68,7 @@ export function registerTeamTools(server: McpServer, ctx: ServerContext): void {
         name: z.string().optional().describe("New team name."),
         avatarUrl: z.string().nullable().optional().describe("New avatar image URL, or null to clear it."),
       },
-      annotations: { openWorldHint: true },
+      annotations: { destructiveHint: true, openWorldHint: true },
     },
     async ({ id, name, avatarUrl }) => {
       const requestBody: TeamUpdateBody = {};
