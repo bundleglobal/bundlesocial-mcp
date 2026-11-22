@@ -14,6 +14,23 @@ export interface CreateServerOptions {
   mode?: ServerMode;
   /** Sent to the API as `x-bundle-client`. Default `mcp/<version>` (`mcp-hosted/<version>` when hosted). */
   clientId?: string;
+  /** Register only tools marked `readOnlyHint` (a read-only OAuth connection). */
+  readOnly?: boolean;
+}
+
+// Drops every tool that isn't marked read-only; the API enforces the same rule.
+function readOnlyView(server: McpServer): McpServer {
+  return new Proxy(server, {
+    get(target, property, receiver) {
+      if (property === "registerTool") {
+        const register = target.registerTool.bind(target) as (...args: unknown[]) => unknown;
+        return (name: string, config: { annotations?: { readOnlyHint?: boolean } }, handler: unknown) =>
+          config?.annotations?.readOnlyHint ? register(name, config, handler) : undefined;
+      }
+      const value = Reflect.get(target, property, receiver);
+      return typeof value === "function" ? value.bind(target) : value;
+    },
+  });
 }
 
 const INSTRUCTIONS =
@@ -44,6 +61,6 @@ export function createServer(options: CreateServerOptions): McpServer {
     mode,
     defaultTeamId: options.defaultTeamId,
   };
-  registerAllTools(server, ctx);
+  registerAllTools(options.readOnly ? readOnlyView(server) : server, ctx);
   return server;
 }

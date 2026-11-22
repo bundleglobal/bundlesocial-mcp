@@ -143,10 +143,11 @@ const fakeTeams = (count: number, start = 0) =>
 
 const servers: McpServer[] = [];
 
-async function connect(options?: { defaultTeamId?: string | null; mode?: "stdio" | "hosted" }) {
+async function connect(options?: { defaultTeamId?: string | null; mode?: "stdio" | "hosted"; readOnly?: boolean }) {
   const server = createServer({
     apiKey: "test-key",
     mode: options?.mode,
+    readOnly: options?.readOnly,
     defaultTeamId: options?.defaultTeamId === null ? undefined : options?.defaultTeamId ?? "team_test",
   });
   servers.push(server);
@@ -1088,6 +1089,15 @@ describe("check_setup", () => {
 });
 
 describe("tool annotations", () => {
+  it("registers only read-only tools when readOnly is set", async () => {
+    const all = (await (await connect()).listTools()).tools;
+    const readOnly = (await (await connect({ readOnly: true })).listTools()).tools;
+    expect(readOnly.length).toBeGreaterThan(0);
+    expect(readOnly.length).toBe(all.filter((t) => t.annotations?.readOnlyHint).length);
+    expect(readOnly.every((t) => t.annotations?.readOnlyHint === true)).toBe(true);
+    expect(readOnly.find((t) => t.name === "create_post")).toBeUndefined();
+  });
+
   it("gives every tool a title and exactly one of readOnlyHint / destructiveHint", async () => {
     const client = await connect();
     const { tools } = await client.listTools();
