@@ -94,7 +94,7 @@ Team-scoped tools take an optional `teamId`, either a team id or the exact team 
 | `upload_media` | Upload an image/video/document from a public URL (or local path in stdio mode). Local files >90 MB use the large-upload flow automatically (.jpg/.jpeg/.png/.gif/.mp4/.pdf only above that size). Returns the upload object — pass its `id` to `create_post`/`schedule_post` via `data` (e.g. `{"TWITTER":{"text":"hi","uploadIds":["<id>"]}}`). |
 | `list_media` / `get_media` | List / fetch media uploads (filter by type and USED/UNUSED). |
 | `delete_media` / `delete_media_many` | Delete one or several uploads (destructive). |
-| `init_large_upload` / `finalize_large_upload` | Low-level chunked-upload primitives — `init` returns a signed PUT `url` + `path`; PUT the bytes there, then `finalize`. (Prefer `upload_media` with a local path — it does this for you.) |
+| `init_large_upload` / `finalize_large_upload` | Direct upload of any file up to 5 GB — `init` returns a signed PUT `url` + `path`; PUT the bytes there, then `finalize`. The way to send local files to the hosted server; in stdio mode `upload_media` with a local path does it for you. |
 
 ### Post-history imports
 
@@ -152,7 +152,7 @@ Edit `claude_desktop_config.json` (macOS: `~/Library/Application Support/Claude/
       "command": "npx",
       "args": ["-y", "bundlesocial-mcp"],
       "env": {
-        "BUNDLESOCIAL_API_KEY": "sk_live_..."
+        "BUNDLESOCIAL_API_KEY": "YOUR_API_KEY"
       }
     }
   }
@@ -162,7 +162,7 @@ Edit `claude_desktop_config.json` (macOS: `~/Library/Application Support/Claude/
 ### Claude Code
 
 ```bash
-claude mcp add bundlesocial --env BUNDLESOCIAL_API_KEY=sk_live_... -- npx -y bundlesocial-mcp
+claude mcp add bundlesocial --env BUNDLESOCIAL_API_KEY=YOUR_API_KEY -- npx -y bundlesocial-mcp
 ```
 
 Or add to `.mcp.json` in your project:
@@ -173,7 +173,7 @@ Or add to `.mcp.json` in your project:
     "bundlesocial": {
       "command": "npx",
       "args": ["-y", "bundlesocial-mcp"],
-      "env": { "BUNDLESOCIAL_API_KEY": "sk_live_..." }
+      "env": { "BUNDLESOCIAL_API_KEY": "YOUR_API_KEY" }
     }
   }
 }
@@ -189,20 +189,27 @@ Add to `~/.cursor/mcp.json` (global) or `.cursor/mcp.json` (project):
     "bundlesocial": {
       "command": "npx",
       "args": ["-y", "bundlesocial-mcp"],
-      "env": { "BUNDLESOCIAL_API_KEY": "sk_live_..." }
+      "env": { "BUNDLESOCIAL_API_KEY": "YOUR_API_KEY" }
     }
   }
 }
 ```
 
-### Remote MCP (planned)
+### Hosted server
 
-A hosted server at `https://mcp.bundle.social` with browser sign-in (OAuth) is on the roadmap. Until then, run the stdio server locally as above.
+The same tools run at `https://mcp.bundle.social` (Streamable HTTP), so there is nothing to install. Send your API key as `Authorization: Bearer YOUR_API_KEY` (or `x-api-key`), and optionally a default team as `x-bundle-team-id`:
+
+```bash
+claude mcp add --transport http bundlesocial https://mcp.bundle.social \
+  --header "Authorization: Bearer YOUR_API_KEY"
+```
+
+The hosted server cannot read local file paths: pass media and CSV files as public `https://` URLs. To send a file from your machine, an agent with a shell calls `init_large_upload`, PUTs the bytes to the returned signed `url` (for example `curl -X PUT -H "Content-Type: video/mp4" --upload-file ./clip.mp4 "<url>"`), then calls `finalize_large_upload`. Setup for other clients: <https://info.bundle.social/api-reference/mcp>.
 
 ## Try it without a client
 
 ```bash
-BUNDLESOCIAL_API_KEY=sk_live_... npx bundlesocial-mcp
+BUNDLESOCIAL_API_KEY=YOUR_API_KEY npx bundlesocial-mcp
 ```
 
 It speaks MCP over stdio — pair it with the [MCP Inspector](https://github.com/modelcontextprotocol/inspector):

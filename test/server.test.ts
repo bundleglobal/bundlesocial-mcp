@@ -1175,7 +1175,22 @@ describe("hosted mode", () => {
     const { json, isError } = await callTool(client, "upload_media", { source: "/etc/passwd" });
     expect(isError).toBe(true);
     expect((json as { error: { code: string } }).error.code).toBe("LOCAL_FILES_NOT_SUPPORTED");
+    expect((json as { error: { message: string } }).error.message).toContain("init_large_upload");
     expect(sdk.upload.uploadCreate).not.toHaveBeenCalled();
+  });
+
+  it("keeps the direct-upload tools on the hosted server, with a shell recipe", async () => {
+    sdk.upload.uploadInitLargeUpload.mockResolvedValue({ url: "https://storage.example.com/put", path: "team_test/a.mov" });
+    const client = await connect({ mode: "hosted" });
+    const { tools } = await client.listTools();
+    const init = tools.find((t) => t.name === "init_large_upload");
+    expect(init?.description).toContain("curl -X PUT");
+    expect(tools.find((t) => t.name === "finalize_large_upload")).toBeDefined();
+    const { json } = await callTool(client, "init_large_upload", { fileName: "a.mov", mimeType: "video/quicktime" });
+    expect(sdk.upload.uploadInitLargeUpload).toHaveBeenCalledWith({
+      requestBody: { teamId: "team_test", fileName: "a.mov", mimeType: "video/quicktime" },
+    });
+    expect(json).toMatchObject({ path: "team_test/a.mov" });
   });
 
   it("refuses local media paths in create_post", async () => {
