@@ -17,6 +17,7 @@ const mocks = vi.hoisted(() => {
       organizationGetPostsUsage: vi.fn(),
       organizationGetCommentsUsage: vi.fn(),
       organizationGetUploadsUsage: vi.fn(),
+      organizationGetMessagesUsage: vi.fn(),
       organizationGetImportsUsage: vi.fn(),
     },
     team: {
@@ -92,6 +93,7 @@ const mocks = vi.hoisted(() => {
       postCsvGetRows: vi.fn(),
     },
     misc: {
+      miscYoutubeEditVideo: vi.fn(),
       miscRedditGetSubredditFlairs: vi.fn(),
       miscYoutubeGetVideoCategories: vi.fn(),
       miscLinkedinGetTags: vi.fn(),
@@ -193,6 +195,12 @@ describe("tool registry", () => {
     const names = tools.map((tool) => tool.name).sort();
     expect(names).toEqual(
       [
+        // generic API access
+        "search_api_actions",
+        "call_api_read",
+        "call_api_action",
+        "get_credit_balance",
+        "quote_billable_usage",
         // diagnostics
         "check_setup",
         // platform reference
@@ -777,14 +785,15 @@ describe("organization & teams", () => {
     expect(json).toMatchObject({ id: "org_test" });
   });
 
-  it("get_usage composes the four usage endpoints", async () => {
+  it("get_usage composes the five usage endpoints", async () => {
     sdk.organization.organizationGetPostsUsage.mockResolvedValue({ used: 1, limit: 10, remaining: 9 });
     sdk.organization.organizationGetCommentsUsage.mockResolvedValue({ used: 0, limit: 5, remaining: 5 });
     sdk.organization.organizationGetUploadsUsage.mockResolvedValue({ used: 2, limit: 20, remaining: 18 });
+    sdk.organization.organizationGetMessagesUsage.mockResolvedValue({ used: 3, limit: 50, remaining: 47 });
     sdk.organization.organizationGetImportsUsage.mockResolvedValue({ limitPerSocialAccount: 100, socialAccounts: [], pagination: { page: 1, pageSize: 20, total: 0, totalPages: 0 } });
     const client = await connect();
     const { json } = await callTool(client, "get_usage", { page: 1 });
-    expect(json).toMatchObject({ posts: { used: 1 }, comments: { remaining: 5 }, uploads: { used: 2 }, imports: { limitPerSocialAccount: 100 } });
+    expect(json).toMatchObject({ posts: { used: 1 }, comments: { remaining: 5 }, uploads: { used: 2 }, messages: { used: 3 }, imports: { limitPerSocialAccount: 100 } });
     expect(sdk.organization.organizationGetImportsUsage).toHaveBeenCalledWith(expect.objectContaining({ page: 1, teamId: "team_test" }));
   });
 
@@ -1142,6 +1151,21 @@ describe("check_setup", () => {
 });
 
 describe("tool annotations", () => {
+  it("exposes every API action through search_api_actions and call_api_*", async () => {
+    sdk.misc.miscYoutubeEditVideo.mockResolvedValue({ ok: true });
+    const client = await connect();
+    const search = await callTool(client, "search_api_actions", { query: "youtube edit video" });
+    expect(JSON.stringify(search.json)).toContain("misc.youtube-edit-video");
+    const wrongTool = await callTool(client, "call_api_read", { action: "misc.youtube-edit-video", params: {} });
+    expect((wrongTool.json as { error: { code: string } }).error.code).toBe("NOT_READ_ONLY");
+    const { json } = await callTool(client, "call_api_action", {
+      action: "misc.youtube-edit-video",
+      params: { postId: "p1", title: "New title" },
+    });
+    expect(sdk.misc.miscYoutubeEditVideo).toHaveBeenCalledWith({ requestBody: { teamId: "team_test", postId: "p1", title: "New title" } });
+    expect(json).toMatchObject({ ok: true });
+  });
+
   it("registers only read-only tools when readOnly is set", async () => {
     const all = (await (await connect()).listTools()).tools;
     const readOnly = (await (await connect({ readOnly: true })).listTools()).tools;

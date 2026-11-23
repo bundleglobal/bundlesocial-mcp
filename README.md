@@ -127,6 +127,17 @@ Team-scoped tools take an optional `teamId`, either a team id or the exact team 
 
 (Analytics are not available for X/Twitter, Discord and Slack.)
 
+### Everything else in the API
+
+| Tool | Description |
+|---|---|
+| `search_api_actions` | Search all ~200 public API actions by keyword: editing or deleting published posts per platform, YouTube playlists and thumbnails, Google Business profile, reviews and Facebook recommendations, direct messages and automations, credits, multipart uploads. A narrow search returns each action's parameters. |
+| `call_api_read` | Run a read action (`readOnly: true`) by id with a flat `params` object. |
+| `call_api_action` | Run an action that changes data (`readOnly: false`) by id. Marked destructive, so clients can ask for confirmation. |
+| `get_credit_balance` / `quote_billable_usage` | Prepaid credit balance for X (Twitter) pay-per-use actions, and a price quote before running them. |
+
+The action list is generated from the `bundlesocial` SDK (`npm run generate:actions`), so it follows the API.
+
 ### Targeting platforms & per-platform fields
 
 `create_post` / `schedule_post` target platforms by **name** (`x`, `tiktok`, `instagram`, `youtube`, `facebook`, `threads`, `linkedin`, `pinterest`, `reddit`, `mastodon`, `discord`, `slack`, `bluesky`, `gbp`, `snapchat`) or by **integration id** (from `list_integrations`). Put platform-required fields under `platformSettings` keyed by platform — e.g. Reddit `sr`, Pinterest `boardName`, TikTok `privacy`, YouTube `madeForKids`/`privacyStatus`, Instagram/Facebook `type` — or pass the full `data` object verbatim. The complete per-platform parameter reference is at **<https://docs.bundle.social/api-reference/platform-parameters>**.

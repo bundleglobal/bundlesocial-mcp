@@ -12,6 +12,7 @@ import { registerPostImportTools } from "./post-imports";
 import { registerPostCsvTools } from "./post-csv";
 import { registerDiagnosticsTools } from "./diagnostics";
 import { registerPlatformReferenceTools } from "./platform-reference";
+import { registerApiTools } from "./api";
 
 export function registerAllTools(server: McpServer, ctx: ServerContext): void {
   registerOrganizationTools(server, ctx);
@@ -26,4 +27,5 @@ export function registerAllTools(server: McpServer, ctx: ServerContext): void {
   registerPostCsvTools(server, ctx);
   registerIntegrationToolHelpers(server, ctx);
   registerDiagnosticsTools(server, ctx);
+  registerApiTools(server, ctx);
 }
