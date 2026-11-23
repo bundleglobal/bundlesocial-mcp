@@ -7,7 +7,7 @@ import type {
   PostReconnectSocialAccountData,
   PostUpdateData,
 } from "bundlesocial";
-import { type ServerContext, resolveTeamId } from "../client";
+import { type ServerContext, resolveTeamId, teamIdSchema } from "../client";
 import { McpToolError, jsonResult } from "../errors";
 import { COMMENT_PLATFORMS, isCommentPlatform, normalizePlatform, type Platform } from "../platforms";
 import { uploadMediaRefs } from "../media";
@@ -68,12 +68,6 @@ const firstCommentSchema = z
   .describe(
     'Comment published as soon as the post itself goes live. A string applies to every comment-capable target; a platform-keyed object targets specific platforms, e.g. {"INSTAGRAM":"more below 👇"}. Supported on TIKTOK, YOUTUBE, INSTAGRAM, FACEBOOK, THREADS, LINKEDIN, REDDIT, MASTODON, DISCORD, SLACK, BLUESKY.',
   );
-
-const teamIdSchema = z
-  .string()
-  .min(1)
-  .optional()
-  .describe("bundle.social team id. Optional when the organization has a single team or BUNDLESOCIAL_TEAM_ID is configured.");
 
 const platformsSchema = z
   .array(z.string().min(1))

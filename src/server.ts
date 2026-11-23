@@ -38,7 +38,7 @@ const INSTRUCTIONS =
   "check_setup reports whether the credentials, organization access and team resolution work. list_integrations returns connected accounts and their ids. " +
   "create_post / schedule_post target platforms by name (x, tiktok, instagram, youtube, facebook, threads, linkedin, pinterest, reddit, mastodon, discord, slack, gbp) or by integration id; platform-required fields (Reddit `sr`, Pinterest `boardName`, TikTok `privacy`, YouTube `madeForKids`/`privacyStatus`) go under `platformSettings` keyed by platform. " +
   "describe_platform returns the exact per-platform `data.<PLATFORM>` field schema for posts and comments; the same fields are documented at https://docs.bundle.social/api-reference/platform-parameters. " +
-  "Team-scoped tools take an optional `teamId`, resolved automatically when the organization has one team or a default team is configured. " +
+  "Team-scoped tools take an optional `teamId` (a team id or exact team name), resolved automatically when the organization has one team or a default team is configured; an organization may have many teams, one per client. " +
   "Errors come back as { error: { code, message, details } } with isError: true.";
 
 const HOSTED_NOTE =

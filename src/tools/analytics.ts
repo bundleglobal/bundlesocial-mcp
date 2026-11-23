@@ -1,18 +1,12 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { AnalyticsGetSocialAccountAnalyticsData } from "bundlesocial";
-import { type ServerContext, resolveTeamId } from "../client";
+import { type ServerContext, resolveTeamId, teamIdSchema } from "../client";
 import { McpToolError, errorSummary, jsonResult } from "../errors";
 import { isAnalyticsPlatform, normalizeAnalyticsPlatform } from "../platforms";
 import { registerTool } from "../register-tool";
 
 type AnalyticsPlatform = AnalyticsGetSocialAccountAnalyticsData["platformType"];
-
-const teamIdSchema = z
-  .string()
-  .min(1)
-  .optional()
-  .describe("bundle.social team id. Optional when the organization has a single team or BUNDLESOCIAL_TEAM_ID is configured.");
 
 function withinRange(value: string | null | undefined, from?: string, to?: string): boolean {
   if (!from && !to) return true;
@@ -139,11 +133,7 @@ export function registerAnalyticsTools(server: McpServer, ctx: ServerContext): v
       description:
         "Organization-level analytics summary: posts/comments/uploads usage quotas for the organization, plus the latest analytics snapshot (followers, impressions, likes, …) for each connected integration on the team. Use `from`/`to` to select the snapshot from a date range.",
       inputSchema: {
-        teamId: z
-          .string()
-          .min(1)
-          .optional()
-          .describe("bundle.social team id. Optional when the organization has a single team or BUNDLESOCIAL_TEAM_ID is configured."),
+        teamId: teamIdSchema,
         from: z.string().optional().describe("Start of the range used to select analytics snapshots (ISO 8601)."),
         to: z.string().optional().describe("End of the range used to select analytics snapshots (ISO 8601)."),
       },

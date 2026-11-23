@@ -13,7 +13,7 @@ It's a thin wrapper over the official [`bundlesocial`](https://www.npmjs.com/pac
 
 ## Tools
 
-Team-scoped tools take an optional `teamId` — skip it when your org has one team or you set `BUNDLESOCIAL_TEAM_ID`. Errors come back as `{ "error": { "code", "message", "details"? } }` with `isError: true`.
+Team-scoped tools take an optional `teamId`, either a team id or the exact team name (case-insensitive) — skip it when your org has one team or you set a default team (`BUNDLESOCIAL_TEAM_ID`, or `x-bundle-team-id` on the hosted server). Without one, an org with several teams gets an error listing the teams to pick from. Errors come back as `{ "error": { "code", "message", "details"? } }` with `isError: true`.
 
 ### Diagnostics
 
@@ -44,7 +44,7 @@ Team-scoped tools take an optional `teamId` — skip it when your org has one te
 
 | Tool | Description |
 |---|---|
-| `list_integrations` | List connected social accounts for a team (ids, platform types, channels). Without a team, lists every team. |
+| `list_integrations` | List connected social accounts for a team (ids, platform types, channels). Without a team, lists every team (up to 10; with more it returns the team list to pick from). |
 | `connect_integration` | Start an OAuth connect flow — returns a `url` to redirect the user to. `serverUrl` for Mastodon/Bluesky; `options` for provider flags (e.g. `snapchatConnectionMethod: "BUSINESS"` for Snap Business Public Profiles). |
 | `disconnect_integration` | Disconnect a social account of a given platform from the team (destructive). |
 | `set_integration_channel` / `unset_integration_channel` | Pick / clear the channel/page to post to (FACEBOOK, INSTAGRAM, LINKEDIN, YOUTUBE, GBP, and SNAPCHAT Business profiles). |

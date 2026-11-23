@@ -1,7 +1,7 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { PostImportCreateData } from "bundlesocial";
-import { type ServerContext, resolveTeamId } from "../client";
+import { type ServerContext, resolveTeamId, teamIdSchema } from "../client";
 import { jsonResult } from "../errors";
 import { normalizePlatform } from "../platforms";
 import { registerTool } from "../register-tool";
@@ -25,7 +25,7 @@ export function registerPostImportTools(server: McpServer, ctx: ServerContext): 
         importCarousels: z.boolean().optional().describe("Include carousel/album posts (Instagram)."),
         surface: z.enum(["PROFILE_GRID", "NON_GRID", "STORY", "ALL"]).optional().describe("Which surface to import from (Instagram)."),
         mediaType: z.enum(["VIDEO", "IMAGE"]).optional().describe("Restrict to one media type."),
-        teamId: z.string().min(1).optional().describe("bundle.social team id. Optional when the organization has a single team or BUNDLESOCIAL_TEAM_ID is configured."),
+        teamId: teamIdSchema,
       },
       annotations: { destructiveHint: true, openWorldHint: true },
     },
@@ -54,7 +54,7 @@ export function registerPostImportTools(server: McpServer, ctx: ServerContext): 
       title: "List post-history imports",
       description: "List post-history import jobs for a team, optionally filtered by platform.",
       inputSchema: {
-        teamId: z.string().min(1).optional().describe("bundle.social team id. Optional when the organization has a single team or BUNDLESOCIAL_TEAM_ID is configured."),
+        teamId: teamIdSchema,
         platform: z.string().optional().describe("Filter by platform name/alias."),
       },
       annotations: { readOnlyHint: true, openWorldHint: true },
@@ -85,7 +85,7 @@ export function registerPostImportTools(server: McpServer, ctx: ServerContext): 
       description: "List the posts imported (with analytics, when available) for a connected account on the given platform.",
       inputSchema: {
         platform: platformSchema,
-        teamId: z.string().min(1).optional().describe("bundle.social team id. Optional when the organization has a single team or BUNDLESOCIAL_TEAM_ID is configured."),
+        teamId: teamIdSchema,
         limit: z.number().int().positive().max(100).optional(),
         offset: z.number().int().nonnegative().optional(),
       },
@@ -105,7 +105,7 @@ export function registerPostImportTools(server: McpServer, ctx: ServerContext): 
       description: "Bulk-delete imported posts (and their analytics) by id. Destructive.",
       inputSchema: {
         postIds: z.array(z.string().min(1)).min(1).describe("Imported-post ids to delete."),
-        teamId: z.string().min(1).optional().describe("bundle.social team id. Optional when the organization has a single team or BUNDLESOCIAL_TEAM_ID is configured."),
+        teamId: teamIdSchema,
       },
       annotations: { destructiveHint: true, openWorldHint: true },
     },
@@ -123,7 +123,7 @@ export function registerPostImportTools(server: McpServer, ctx: ServerContext): 
       description: "Retry a post-history import job that ended in FAILED / RATE_LIMITED.",
       inputSchema: {
         importId: z.string().min(1).describe("Post import id."),
-        teamId: z.string().min(1).optional().describe("bundle.social team id. Optional when the organization has a single team or BUNDLESOCIAL_TEAM_ID is configured."),
+        teamId: teamIdSchema,
       },
       annotations: { destructiveHint: true, openWorldHint: true },
     },

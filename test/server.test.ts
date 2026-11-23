@@ -341,6 +341,59 @@ describe("list_integrations", () => {
   });
 });
 
+describe("team resolution", () => {
+  const teams = [
+    { id: "11111111-1111-4111-8111-111111111111", name: "Acme", socialAccounts: [] },
+    { id: "22222222-2222-4222-8222-222222222222", name: "Demo", socialAccounts: [] },
+    { id: "33333333-3333-4333-8333-333333333333", name: "Twin", socialAccounts: [] },
+    { id: "44444444-4444-4444-8444-444444444444", name: "twin", socialAccounts: [] },
+  ];
+  beforeEach(() => sdk.team.teamGetList.mockResolvedValue({ items: teams, total: teams.length }));
+
+  it("accepts a team name, case-insensitively", async () => {
+    const client = await connect({ defaultTeamId: null });
+    await callTool(client, "list_integrations", { teamId: "demo" });
+    expect(sdk.team.teamGetTeam).toHaveBeenCalledWith({ id: "22222222-2222-4222-8222-222222222222" });
+  });
+
+  it("uses a UUID as-is without listing teams", async () => {
+    const client = await connect({ defaultTeamId: null });
+    await callTool(client, "list_integrations", { teamId: "11111111-1111-4111-8111-111111111111" });
+    expect(sdk.team.teamGetList).not.toHaveBeenCalled();
+    expect(sdk.team.teamGetTeam).toHaveBeenCalledWith({ id: "11111111-1111-4111-8111-111111111111" });
+  });
+
+  it("returns the team list for an unknown or ambiguous name", async () => {
+    const client = await connect({ defaultTeamId: null });
+    const missing = await callTool(client, "list_integrations", { teamId: "Nope" });
+    const missingError = (missing.json as { error: { code: string; details: { teams: unknown[] } } }).error;
+    expect(missingError.code).toBe("TEAM_NOT_FOUND");
+    expect(missingError.details.teams).toHaveLength(4);
+
+    const twin = await callTool(client, "list_integrations", { teamId: "TWIN" });
+    const twinError = (twin.json as { error: { code: string; details: { teams: unknown[] } } }).error;
+    expect(twinError.code).toBe("TEAM_AMBIGUOUS");
+    expect(twinError.details.teams).toHaveLength(2);
+  });
+
+  it("list_integrations without a team returns the team list instead of expanding many teams", async () => {
+    sdk.team.teamGetList.mockResolvedValue({ items: fakeTeams(11), total: 11 });
+    const client = await connect({ defaultTeamId: null });
+    const { json } = await callTool(client, "list_integrations");
+    expect(sdk.team.teamGetTeam).not.toHaveBeenCalled();
+    expect((json as { teams: unknown[] }).teams).toHaveLength(11);
+  });
+
+  it("check_setup treats several teams as normal, not a warning", async () => {
+    sdk.organization.organizationGetPostsUsage.mockResolvedValue({ used: 1, limit: 10, remaining: 9 });
+    const client = await connect({ defaultTeamId: null });
+    const { json } = await callTool(client, "check_setup");
+    const team = (json as { checks: Array<{ name: string; status: string; message: string }> }).checks.find((c) => c.name === "team");
+    expect(team?.status).toBe("ok");
+    expect(team?.message).toContain("4 teams");
+  });
+});
+
 describe("create_post", () => {
   beforeEach(() => sdk.post.postCreate.mockResolvedValue({ id: "post_1", status: "SCHEDULED", title: "Hello" }));
 

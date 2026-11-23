@@ -4,16 +4,12 @@ import type {
   SocialAccountConnectData,
   SocialAccountCreatePortalLinkData,
 } from "bundlesocial";
-import { type ServerContext, listAllTeams, resolveTeamId } from "../client";
+import { type ServerContext, listAllTeams, resolveTeamId, teamIdSchema } from "../client";
+
+const MAX_TEAMS_EXPANDED = 10;
 import { jsonResult } from "../errors";
 import { normalizePlatform, type Platform } from "../platforms";
 import { registerTool } from "../register-tool";
-
-const teamIdSchema = z
-  .string()
-  .min(1)
-  .optional()
-  .describe("bundle.social team id. Optional when the organization has a single team or BUNDLESOCIAL_TEAM_ID is configured.");
 
 const platformSchema = z
   .string()
@@ -61,7 +57,7 @@ export function registerIntegrationTools(server: McpServer, ctx: ServerContext):
     },
     async ({ teamId }) => {
       if (teamId ?? ctx.defaultTeamId) {
-        const id = (teamId ?? ctx.defaultTeamId) as string;
+        const id = await resolveTeamId(ctx, teamId);
         const team = await ctx.client.team.teamGetTeam({ id });
         return jsonResult({ teamId: team.id, teamName: team.name, integrations: mapAccounts(team.socialAccounts) });
       }
@@ -69,6 +65,13 @@ export function registerIntegrationTools(server: McpServer, ctx: ServerContext):
       if (teams.length === 1) {
         const team = await ctx.client.team.teamGetTeam({ id: teams[0].id });
         return jsonResult({ teamId: team.id, teamName: team.name, integrations: mapAccounts(team.socialAccounts) });
+      }
+      // One API call per team; past a handful, return the team list and let the agent pick.
+      if (teams.length > MAX_TEAMS_EXPANDED) {
+        return jsonResult({
+          message: `${teams.length} teams. Call again with teamId (a team id or name) to see one team's integrations.`,
+          teams: teams.map((team) => ({ id: team.id, name: team.name })),
+        });
       }
       const organization = await ctx.client.organization.organizationGetOrganization();
       const perTeam = [];

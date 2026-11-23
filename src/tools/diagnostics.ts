@@ -71,14 +71,17 @@ export function registerDiagnosticsTools(server: McpServer, ctx: ServerContext):
       let teamId: string | undefined;
       if (ctx.defaultTeamId) {
         teamId = ctx.defaultTeamId;
-        add("team", "ok", "Using team from BUNDLESOCIAL_TEAM_ID / --team-id", { teamId });
+        add("team", "ok", "Using the configured default team", { teamId });
       } else if (teams.length === 1) {
         teamId = teams[0].id;
         add("team", "ok", "Using the organization's only team", { teamId, teamName: teams[0].name });
       } else if (teams.length === 0) {
         add("team", "fail", "Organization has no teams — create one in the dashboard");
       } else {
-        add("team", "warn", `Organization has ${teams.length} teams; tools need a teamId argument (or set BUNDLESOCIAL_TEAM_ID)`, { teams });
+        // Several teams is normal (agencies run one per client): the agent names the team per request.
+        add("team", "ok", `${teams.length} teams, no default team. Name the team in each request; teamId accepts a team id or name.`, {
+          teams,
+        });
       }
 
       if (teamId) {
