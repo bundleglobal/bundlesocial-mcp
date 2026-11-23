@@ -12,7 +12,7 @@ export function registerMediaTools(server: McpServer, ctx: ServerContext): void 
     {
       title: "Upload media",
       description:
-        "Upload a media file (image, video or document) to a bundle.social team from a public https:// URL — or, when this server runs in stdio mode, a local file path. Local files larger than ~90 MB are uploaded via the large-upload flow automatically (only .jpg/.jpeg/.png/.gif/.mp4/.pdf are supported above that size). Returns the upload object; pass its `id` to create_post/schedule_post via the `data` argument (e.g. {\"TWITTER\":{\"text\":\"hi\",\"uploadIds\":[\"<id>\"]}}).",
+        "Upload a media file (image, video or document) to a bundle.social team from a public https:// URL — or, when this server runs in stdio mode, a local file path. Local files larger than ~90 MB are uploaded via the large-upload flow automatically (only .jpg/.jpeg/.png/.gif/.mp4/.mov/.pdf are supported above that size). On the hosted server, send local files with init_large_upload instead. Returns the upload object; pass its `id` to create_post/schedule_post via the `data` argument (e.g. {\"TWITTER\":{\"text\":\"hi\",\"uploadIds\":[\"<id>\"]}}).",
       inputSchema: {
         teamId: teamIdSchema,
         source: z.string().min(1).describe("A public https:// URL, or a local file path (stdio mode only)."),
@@ -86,11 +86,13 @@ export function registerMediaTools(server: McpServer, ctx: ServerContext): void 
     {
       title: "Initialize a large upload",
       description:
-        "Low-level: start a >90 MB upload. Returns a signed `url` (PUT the file bytes there with the matching content-type) and a `path` to pass to finalize_large_upload. Prefer `upload_media` with a local file path in stdio mode — it does this automatically.",
+        "Start a direct upload of a file of any size up to 5 GB. Returns a signed `url` (valid 30 minutes) and a `path`. PUT the raw file bytes to `url` with the same Content-Type as `mimeType`, for example `curl -X PUT -H \"Content-Type: video/mp4\" --upload-file ./clip.mp4 \"<url>\"`, then call finalize_large_upload with `path`. Use this to send a file from the user's machine to the hosted server (it cannot read local paths) or for files over ~90 MB. In stdio mode, upload_media with a local path does all of this automatically.",
       inputSchema: {
         teamId: teamIdSchema,
         fileName: z.string().min(1).describe("File name."),
-        mimeType: z.enum(["image/jpg", "image/jpeg", "image/png", "image/gif", "video/mp4", "application/pdf"]).describe("File MIME type."),
+        mimeType: z
+          .enum(["image/jpg", "image/jpeg", "image/png", "image/gif", "video/mp4", "video/quicktime", "application/pdf"])
+          .describe("File MIME type; also the Content-Type of the PUT."),
       },
       annotations: { destructiveHint: true, openWorldHint: true },
     },
@@ -105,7 +107,8 @@ export function registerMediaTools(server: McpServer, ctx: ServerContext): void 
     "finalize_large_upload",
     {
       title: "Finalize a large upload",
-      description: "Low-level: finalize a >90 MB upload after the bytes have been PUT to the signed URL from init_large_upload. Returns the upload object.",
+      description:
+        "Finish a direct upload after the file bytes have been PUT to the signed url from init_large_upload. Returns the upload object; pass its `id` to create_post/schedule_post.",
       inputSchema: {
         teamId: teamIdSchema,
         path: z.string().min(1).describe("The `path` returned by init_large_upload."),

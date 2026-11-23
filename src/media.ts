@@ -35,12 +35,16 @@ function isUrl(value: string): boolean {
 export const LARGE_UPLOAD_THRESHOLD_BYTES = 90 * 1024 * 1024;
 
 /** MIME types accepted by the large-upload (init) endpoint. */
-const LARGE_UPLOAD_MIME_BY_EXT: Record<string, "image/jpg" | "image/jpeg" | "image/png" | "image/gif" | "video/mp4" | "application/pdf"> = {
+const LARGE_UPLOAD_MIME_BY_EXT: Record<
+  string,
+  "image/jpg" | "image/jpeg" | "image/png" | "image/gif" | "video/mp4" | "video/quicktime" | "application/pdf"
+> = {
   ".jpg": "image/jpg",
   ".jpeg": "image/jpeg",
   ".png": "image/png",
   ".gif": "image/gif",
   ".mp4": "video/mp4",
+  ".mov": "video/quicktime",
   ".pdf": "application/pdf",
 };
 
@@ -49,7 +53,9 @@ export function assertLocalFilesAllowed(ctx: Pick<ServerContext, "mode">, ref: s
   if (ctx.mode !== "hosted") return;
   throw new McpToolError(
     "LOCAL_FILES_NOT_SUPPORTED",
-    `"${ref}" is not a public https:// URL. This bundle.social server runs remotely and cannot read files from your computer; pass a public https:// URL to the ${kind} instead.`,
+    kind === "media"
+      ? `"${ref}" is not a public https:// URL. This bundle.social server runs remotely and cannot read files from your computer. Pass a public https:// URL, or, if you can run shell commands, call init_large_upload, PUT the file to the returned url (curl -X PUT -H "Content-Type: <mimeType>" --upload-file "${ref}" "<url>"), then call finalize_large_upload.`
+      : `"${ref}" is not a public https:// URL. This bundle.social server runs remotely and cannot read files from your computer; pass a public https:// URL to the ${kind} instead.`,
   );
 }
 

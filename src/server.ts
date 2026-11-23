@@ -42,7 +42,7 @@ const INSTRUCTIONS =
   "Errors come back as { error: { code, message, details } } with isError: true.";
 
 const HOSTED_NOTE =
-  " This server runs remotely: media and CSV sources must be public https:// URLs, local file paths are not readable.";
+  " This server runs remotely and cannot read local file paths: media and CSV sources must be public https:// URLs. To send a file from the user's machine, a client with a shell can call init_large_upload, PUT the bytes to the returned url (for example with curl --upload-file), then call finalize_large_upload.";
 
 /** Build an MCP server exposing the bundle.social tools. Transport-agnostic. */
 export function createServer(options: CreateServerOptions): McpServer {
