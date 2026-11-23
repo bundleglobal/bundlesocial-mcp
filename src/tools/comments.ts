@@ -1,7 +1,7 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { CommentCreateData, CommentGetListData, CommentImportCreateData, CommentUpdateData } from "bundlesocial";
-import { type ServerContext, resolveTeamId } from "../client";
+import { type ServerContext, resolveTeamId, teamIdSchema } from "../client";
 import { McpToolError, jsonResult } from "../errors";
 import { COMMENT_PLATFORMS, type CommentPlatform, isCommentPlatform, normalizePlatform } from "../platforms";
 import { resolveTargetPlatforms } from "../post-data";
@@ -13,12 +13,6 @@ const commentImportStatusSchema = z.enum(["PENDING", "FETCHING", "RETRYING", "CO
 
 type CommentCreateBody = NonNullable<CommentCreateData["requestBody"]>;
 type CommentUpdateBody = NonNullable<CommentUpdateData["requestBody"]>;
-
-const teamIdSchema = z
-  .string()
-  .min(1)
-  .optional()
-  .describe("bundle.social team id. Optional when the organization has a single team or BUNDLESOCIAL_TEAM_ID is configured.");
 
 function assertCommentPlatforms(platforms: string[]): CommentPlatform[] {
   const bad = platforms.filter((platform) => !isCommentPlatform(platform));

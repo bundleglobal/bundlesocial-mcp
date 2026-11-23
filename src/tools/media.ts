@@ -1,15 +1,9 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { type ServerContext, resolveTeamId } from "../client";
+import { type ServerContext, resolveTeamId, teamIdSchema } from "../client";
 import { jsonResult } from "../errors";
 import { uploadMediaRef } from "../media";
 import { registerTool } from "../register-tool";
-
-const teamIdSchema = z
-  .string()
-  .min(1)
-  .optional()
-  .describe("bundle.social team id. Optional when the organization has a single team or BUNDLESOCIAL_TEAM_ID is configured.");
 
 export function registerMediaTools(server: McpServer, ctx: ServerContext): void {
   registerTool(

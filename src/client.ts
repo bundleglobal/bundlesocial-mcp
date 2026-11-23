@@ -1,4 +1,5 @@
 import { Bundlesocial, OpenAPI, type TeamGetListResponse } from "bundlesocial";
+import { z } from "zod";
 import { McpToolError } from "./errors";
 
 export const DEFAULT_API_URL = "https://api.bundle.social";
@@ -47,12 +48,39 @@ export function createClient(apiKey: string, apiUrl: string = DEFAULT_API_URL, c
   });
 }
 
+/** Shared `teamId` input: an id or a team name, so agents can say "the Acme team" directly. */
+export const teamIdSchema = z
+  .string()
+  .min(1)
+  .optional()
+  .describe(
+    "bundle.social team id or exact team name. Optional when the organization has one team or a default team is configured; otherwise list_teams shows the choices.",
+  );
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const teamSummary = (teams: TeamListItem[]) => teams.map((team) => ({ id: team.id, name: team.name }));
+
 /**
- * Resolve the team to operate on: explicit `teamId` argument > server's
- * configured default > the organization's only team. Throws when ambiguous.
+ * Resolve the team to operate on: explicit `teamId` (an id or a team name) > configured
+ * default > the organization's only team. Throws with the team list when ambiguous.
  */
 export async function resolveTeamId(ctx: ServerContext, teamIdArg?: string): Promise<string> {
-  if (teamIdArg) return teamIdArg;
+  if (teamIdArg) {
+    const value = teamIdArg.trim();
+    if (UUID_RE.test(value)) return value;
+    const teams = await listAllTeams(ctx.client);
+    if (teams.some((team) => team.id === value)) return value;
+    const byName = teams.filter((team) => team.name?.trim().toLowerCase() === value.toLowerCase());
+    if (byName.length === 1) return byName[0].id;
+    if (byName.length > 1) {
+      throw new McpToolError("TEAM_AMBIGUOUS", `${byName.length} teams are named "${value}". Pass the team id instead.`, {
+        teams: teamSummary(byName),
+      });
+    }
+    throw new McpToolError("TEAM_NOT_FOUND", `No team with id or name "${value}". Pick one of the teams listed in details.`, {
+      teams: teamSummary(teams),
+    });
+  }
   if (ctx.defaultTeamId) return ctx.defaultTeamId;
   const teams = await listAllTeams(ctx.client);
   if (teams.length === 1) return teams[0].id;
@@ -61,7 +89,7 @@ export async function resolveTeamId(ctx: ServerContext, teamIdArg?: string): Pro
   }
   throw new McpToolError(
     "TEAM_ID_REQUIRED",
-    `This organization has ${teams.length} teams. Pass a "teamId" argument (or set BUNDLESOCIAL_TEAM_ID when starting the server).`,
-    { teams: teams.map((team) => ({ id: team.id, name: team.name })) },
+    `This organization has ${teams.length} teams and no default team. Pass "teamId" (a team id or name) from the teams listed in details.`,
+    { teams: teamSummary(teams) },
   );
 }
