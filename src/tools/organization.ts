@@ -23,7 +23,7 @@ export function registerOrganizationTools(server: McpServer, ctx: ServerContext)
     {
       title: "Get usage quotas",
       description:
-        "Organization usage quotas: posts, comments and uploads (used/limit/remaining), plus a paginated per-social-account breakdown of post-history import usage. Use the pagination/filter args for the imports breakdown.",
+        "Organization usage quotas: posts, comments, uploads and direct messages (used/limit/remaining), plus a paginated per-social-account breakdown of post-history import usage. Use the pagination/filter args for the imports breakdown.",
       inputSchema: {
         teamId: teamIdSchema,
         platform: z.string().optional().describe("Filter the imports breakdown to one platform name/alias (e.g. instagram, tiktok)."),
@@ -36,10 +36,11 @@ export function registerOrganizationTools(server: McpServer, ctx: ServerContext)
     async ({ teamId, platform, socialAccountId, page, pageSize }) => {
       const id = teamId ?? ctx.defaultTeamId;
       const resolvedTeamId = id ?? (await resolveTeamId(ctx, teamId).catch(() => undefined));
-      const [posts, comments, uploads, imports] = await Promise.all([
+      const [posts, comments, uploads, messages, imports] = await Promise.all([
         ctx.client.organization.organizationGetPostsUsage().catch((error) => ({ error: errorSummary(error) })),
         ctx.client.organization.organizationGetCommentsUsage().catch((error) => ({ error: errorSummary(error) })),
         ctx.client.organization.organizationGetUploadsUsage().catch((error) => ({ error: errorSummary(error) })),
+        ctx.client.organization.organizationGetMessagesUsage().catch((error) => ({ error: errorSummary(error) })),
         ctx.client.organization
           .organizationGetImportsUsage({
             page,
@@ -50,7 +51,7 @@ export function registerOrganizationTools(server: McpServer, ctx: ServerContext)
           })
           .catch((error) => ({ error: errorSummary(error) })),
       ]);
-      return jsonResult({ posts, comments, uploads, imports });
+      return jsonResult({ posts, comments, uploads, messages, imports });
     },
   );
 

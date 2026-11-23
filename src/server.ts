@@ -39,6 +39,7 @@ const INSTRUCTIONS =
   "create_post / schedule_post target platforms by name (x, tiktok, instagram, youtube, facebook, threads, linkedin, pinterest, reddit, mastodon, discord, slack, gbp) or by integration id; platform-required fields (Reddit `sr`, Pinterest `boardName`, TikTok `privacy`, YouTube `madeForKids`/`privacyStatus`) go under `platformSettings` keyed by platform. " +
   "describe_platform returns the exact per-platform `data.<PLATFORM>` field schema for posts and comments; the same fields are documented at https://docs.bundle.social/api-reference/platform-parameters. " +
   "Team-scoped tools take an optional `teamId` (a team id or exact team name), resolved automatically when the organization has one team or a default team is configured; an organization may have many teams, one per client. " +
+  "search_api_actions reaches every other public API endpoint (editing or deleting published posts per platform, YouTube playlists, Google Business profile and reviews, Facebook recommendations, direct messages, automations, credits); run them with call_api_read or call_api_action. " +
   "Errors come back as { error: { code, message, details } } with isError: true.";
 
 const HOSTED_NOTE =
