@@ -1,3 +1,10 @@
+# [1.4.0](https://github.com/bundleglobal/bundlesocial-mcp/compare/v1.3.0...v1.4.0) (2026-11-23)
+
+
+### Features
+
+* hosted mode, library export and destructive-tool annotations ([#4](https://github.com/bundleglobal/bundlesocial-mcp/issues/4)) ([308d287](https://github.com/bundleglobal/bundlesocial-mcp/commit/308d287a59fdf9444aca05ea00b45a70c39f33df))
+
 # [1.3.0](https://github.com/bundleglobal/bundlesocial-mcp/compare/v1.2.3...v1.3.0) (2026-11-18)
 
 
