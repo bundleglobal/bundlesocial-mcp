@@ -1,3 +1,10 @@
+# [1.5.0](https://github.com/bundleglobal/bundlesocial-mcp/compare/v1.4.0...v1.5.0) (2026-11-23)
+
+
+### Features
+
+* teamId accepts a team name; several teams is not a setup warning ([#5](https://github.com/bundleglobal/bundlesocial-mcp/issues/5)) ([1ee5a50](https://github.com/bundleglobal/bundlesocial-mcp/commit/1ee5a50c74e8c0eed922f0c77eb2128f0344083e))
+
 # [1.4.0](https://github.com/bundleglobal/bundlesocial-mcp/compare/v1.3.0...v1.4.0) (2026-11-23)
 
 
