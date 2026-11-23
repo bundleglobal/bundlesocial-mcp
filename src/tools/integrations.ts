@@ -99,7 +99,7 @@ export function registerIntegrationTools(server: McpServer, ctx: ServerContext):
             "Advanced provider flags, e.g. {\"instagramConnectionMethod\":\"INSTAGRAM\",\"withBusinessScope\":true,\"disableAutoLogin\":true,\"forceBrowserOAuth\":true,\"tiktokForceLogin\":true}. `withBusinessScope` also unlocks YouTube monetization analytics; `tiktokForceLogin` (experimental) forces TikTok's account picker when it keeps reusing the wrong active account; `snapchatConnectionMethod` \"PERSONAL\" (default, the login's own Public Profile) or \"BUSINESS\" (lists the Public Profiles of the login's Snap Business organizations — pick one with set_integration_channel).",
           ),
       },
-      annotations: { openWorldHint: true },
+      annotations: { destructiveHint: true, openWorldHint: true },
     },
     async ({ platform, redirectUrl, serverUrl, teamId, options }) => {
       const id = await resolveTeamId(ctx, teamId);
@@ -136,7 +136,7 @@ export function registerIntegrationTools(server: McpServer, ctx: ServerContext):
       title: "Set a social account's channel/page",
       description: "Select the page/channel for a connected account (needed for FACEBOOK, INSTAGRAM, LINKEDIN, YOUTUBE, GOOGLE_BUSINESS, and SNAPCHAT connected with snapchatConnectionMethod BUSINESS). Get channel ids from list_integrations / refresh_integration_channels.",
       inputSchema: { platform: platformSchema, channelId: z.string().min(1).describe("Channel/page id to select."), teamId: teamIdSchema },
-      annotations: { openWorldHint: true },
+      annotations: { destructiveHint: true, openWorldHint: true },
     },
     async ({ platform, channelId, teamId }) => {
       const id = await resolveTeamId(ctx, teamId);
@@ -151,7 +151,7 @@ export function registerIntegrationTools(server: McpServer, ctx: ServerContext):
       title: "Clear a social account's channel/page",
       description: "Clear the selected page/channel for a connected account (FACEBOOK, INSTAGRAM, LINKEDIN, YOUTUBE, GOOGLE_BUSINESS, SNAPCHAT) while keeping the authorization.",
       inputSchema: { platform: platformSchema, teamId: teamIdSchema },
-      annotations: { openWorldHint: true },
+      annotations: { destructiveHint: true, openWorldHint: true },
     },
     async ({ platform, teamId }) => {
       const id = await resolveTeamId(ctx, teamId);
@@ -166,7 +166,7 @@ export function registerIntegrationTools(server: McpServer, ctx: ServerContext):
       title: "Refresh a social account's channels",
       description: "Re-fetch the available channels for a connected account (needed for REDDIT, DISCORD, SLACK, PINTEREST and the page-based platforms).",
       inputSchema: { platform: platformSchema, teamId: teamIdSchema },
-      annotations: { openWorldHint: true },
+      annotations: { destructiveHint: true, openWorldHint: true },
     },
     async ({ platform, teamId }) => {
       const id = await resolveTeamId(ctx, teamId);
@@ -193,7 +193,7 @@ export function registerIntegrationTools(server: McpServer, ctx: ServerContext):
             "Advanced portal options — branding (logoUrl, userLogoUrl, userName, goBackButtonText, hidePoweredBy, hideGoBackButton, hideUserLogo, hideUserName, hideLanguageSwitcher, showModalOnConnectSuccess, language, maxSocialAccountsConnected) and the same OAuth flags as connect_integration (serverUrl, instagramConnectionMethod, snapchatConnectionMethod, withBusinessScope, disableAutoLogin, forceBrowserOAuth, tiktokForceLogin).",
           ),
       },
-      annotations: { openWorldHint: true },
+      annotations: { destructiveHint: true, openWorldHint: true },
     },
     async ({ platforms, redirectUrl, teamId, expiresInMinutes, options }) => {
       const id = await resolveTeamId(ctx, teamId);
@@ -230,7 +230,7 @@ export function registerIntegrationTools(server: McpServer, ctx: ServerContext):
       title: "Refresh a social account's profile",
       description: "Re-fetch the profile info (username, display name, avatar) for a connected account of the given platform.",
       inputSchema: { platform: platformSchema, teamId: teamIdSchema },
-      annotations: { openWorldHint: true },
+      annotations: { destructiveHint: true, openWorldHint: true },
     },
     async ({ platform, teamId }) => {
       const id = await resolveTeamId(ctx, teamId);
@@ -265,7 +265,7 @@ export function registerIntegrationTools(server: McpServer, ctx: ServerContext):
         platforms: z.array(z.string().min(1)).min(1).describe("Platforms to copy (names/aliases)."),
         resetChannel: z.boolean().optional().describe("If true, the destination must re-select the page/channel."),
       },
-      annotations: { openWorldHint: true },
+      annotations: { destructiveHint: true, openWorldHint: true },
     },
     async ({ fromTeamId, toTeamId, platforms, resetChannel }) =>
       jsonResult(

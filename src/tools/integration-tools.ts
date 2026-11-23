@@ -66,7 +66,7 @@ export function registerIntegrationToolHelpers(server: McpServer, ctx: ServerCon
           .describe(`enable/extend only: code validity in days, one of ${TIKTOK_AUTHORIZATION_DAYS.join(", ")}. Default 30.`),
         teamId: teamIdSchema,
       },
-      annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: true },
+      annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false, openWorldHint: true },
     },
     async ({ action, teamId, ...params }) => {
       const id = await resolveTeamId(ctx, teamId);

@@ -131,7 +131,7 @@ async function composePost(ctx: ServerContext, args: ComposeArgs) {
   }
   if (targets.length === 0) throw new McpToolError("NO_TARGET", "Could not determine any target platform for this post.");
 
-  const mediaUploadIds = await uploadMediaRefs(ctx.client, teamId, args.media ?? []);
+  const mediaUploadIds = await uploadMediaRefs(ctx, teamId, args.media ?? []);
   const data = buildPostData(targets, {
     content: args.content,
     mediaUploadIds,
@@ -167,7 +167,7 @@ export function registerPostTools(server: McpServer, ctx: ServerContext): void {
         firstComment: firstCommentSchema,
         draft: z.boolean().optional().default(false).describe("If true, save as a DRAFT instead of publishing now."),
       },
-      annotations: { openWorldHint: true },
+      annotations: { destructiveHint: true, openWorldHint: true },
     },
     async ({ teamId, content, platforms, media, platformSettings, data, title, referenceKey, firstComment, draft }) => {
       const composed = await composePost(ctx, { teamId, content, platforms, media, platformSettings, data, title });
@@ -205,7 +205,7 @@ export function registerPostTools(server: McpServer, ctx: ServerContext): void {
         referenceKey: referenceKeySchema,
         firstComment: firstCommentSchema,
       },
-      annotations: { openWorldHint: true },
+      annotations: { destructiveHint: true, openWorldHint: true },
     },
     async ({ teamId, date, content, platforms, media, platformSettings, data, title, referenceKey, firstComment }) => {
       const postDate = toIsoDate(date, "date");
@@ -312,7 +312,7 @@ export function registerPostTools(server: McpServer, ctx: ServerContext): void {
         firstComment: firstCommentSchema,
         teamId: teamIdSchema,
       },
-      annotations: { openWorldHint: true },
+      annotations: { destructiveHint: true, openWorldHint: true },
     },
     async ({ id, title, date, status, content, platforms, media, platformSettings, data, referenceKey, firstComment, teamId }) => {
       const resolvedTeamId = await resolveTeamId(ctx, teamId);
@@ -343,7 +343,7 @@ export function registerPostTools(server: McpServer, ctx: ServerContext): void {
       if (status) requestBody.status = status;
       if (targets && targets.length > 0) requestBody.socialAccountTypes = targets as PostUpdateBody["socialAccountTypes"];
       if (wantsDataChange && targets && targets.length > 0) {
-        const mediaUploadIds = await uploadMediaRefs(ctx.client, resolvedTeamId, media ?? []);
+        const mediaUploadIds = await uploadMediaRefs(ctx, resolvedTeamId, media ?? []);
         requestBody.data = buildPostData(targets, {
           content,
           mediaUploadIds,
@@ -368,7 +368,7 @@ export function registerPostTools(server: McpServer, ctx: ServerContext): void {
       title: "Retry a failed post",
       description: "Retry publishing a post that ended in the ERROR state.",
       inputSchema: { id: z.string().min(1).describe("Post id.") },
-      annotations: { openWorldHint: true },
+      annotations: { destructiveHint: true, openWorldHint: true },
     },
     async ({ id }) => jsonResult(await ctx.client.post.postRetry({ id })),
   );
@@ -425,7 +425,7 @@ export function registerPostTools(server: McpServer, ctx: ServerContext): void {
         platform: z.string().min(1).describe("Platform of the reconnected account (name or alias)."),
         postIds: z.array(z.string().min(1)).optional().describe("Only reattach these post ids. Defaults to every candidate."),
       },
-      annotations: { openWorldHint: true },
+      annotations: { destructiveHint: true, openWorldHint: true },
     },
     async ({ teamId, platform, postIds }) => {
       const id = await resolveTeamId(ctx, teamId);

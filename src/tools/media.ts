@@ -23,11 +23,11 @@ export function registerMediaTools(server: McpServer, ctx: ServerContext): void 
         teamId: teamIdSchema,
         source: z.string().min(1).describe("A public https:// URL, or a local file path (stdio mode only)."),
       },
-      annotations: { openWorldHint: true },
+      annotations: { destructiveHint: true, openWorldHint: true },
     },
     async ({ teamId, source }) => {
       const id = await resolveTeamId(ctx, teamId);
-      return jsonResult(await uploadMediaRef(ctx.client, id, source));
+      return jsonResult(await uploadMediaRef(ctx, id, source));
     },
   );
 
@@ -98,7 +98,7 @@ export function registerMediaTools(server: McpServer, ctx: ServerContext): void 
         fileName: z.string().min(1).describe("File name."),
         mimeType: z.enum(["image/jpg", "image/jpeg", "image/png", "image/gif", "video/mp4", "application/pdf"]).describe("File MIME type."),
       },
-      annotations: { openWorldHint: true },
+      annotations: { destructiveHint: true, openWorldHint: true },
     },
     async ({ teamId, fileName, mimeType }) => {
       const id = await resolveTeamId(ctx, teamId);
@@ -116,7 +116,7 @@ export function registerMediaTools(server: McpServer, ctx: ServerContext): void 
         teamId: teamIdSchema,
         path: z.string().min(1).describe("The `path` returned by init_large_upload."),
       },
-      annotations: { openWorldHint: true },
+      annotations: { destructiveHint: true, openWorldHint: true },
     },
     async ({ teamId, path }) => {
       const id = await resolveTeamId(ctx, teamId);

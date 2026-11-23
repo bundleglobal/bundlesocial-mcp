@@ -5,12 +5,22 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { ServerContext } from "../client";
 import { McpToolError, jsonResult } from "../errors";
 import { registerTool } from "../register-tool";
+import { assertLocalFilesAllowed } from "../media";
+import { fetchPublicHttps } from "../safe-fetch";
+
+const MAX_CSV_BYTES = 50 * 1024 * 1024;
 
 function isUrl(value: string): boolean {
   return /^https?:\/\//i.test(value.trim());
 }
 
-async function readCsvFile(source: string): Promise<File> {
+async function readCsvFile(ctx: ServerContext, source: string): Promise<File> {
+  if (isUrl(source) && ctx.mode === "hosted") {
+    // Hosted: the URL is fetched from our network, so block private hosts and redirects.
+    const buffer = await fetchPublicHttps(source.trim(), { maxBytes: MAX_CSV_BYTES });
+    const name = path.basename(new URL(source).pathname) || "import.csv";
+    return new File([new Uint8Array(buffer)], name, { type: "text/csv" });
+  }
   if (isUrl(source)) {
     const response = await fetch(source.trim());
     if (!response.ok) {
@@ -20,6 +30,7 @@ async function readCsvFile(source: string): Promise<File> {
     const name = path.basename(new URL(source).pathname) || "import.csv";
     return new File([buffer], name, { type: "text/csv" });
   }
+  assertLocalFilesAllowed(ctx, source, "CSV");
   const absolutePath = path.resolve(source);
   let buffer: Buffer;
   try {
@@ -45,10 +56,10 @@ export function registerPostCsvTools(server: McpServer, ctx: ServerContext): voi
       inputSchema: {
         source: z.string().min(1).describe("Public https:// URL of the CSV, or a local file path (stdio mode only)."),
       },
-      annotations: { openWorldHint: true },
+      annotations: { destructiveHint: true, openWorldHint: true },
     },
     async ({ source }) => {
-      const file = await readCsvFile(source);
+      const file = await readCsvFile(ctx, source);
       return jsonResult(await ctx.client.postCsv.postCsvCreate({ formData: { file } }));
     },
   );

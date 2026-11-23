@@ -1,6 +1,7 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import type { Bundlesocial } from "bundlesocial";
+import type { ServerContext } from "./client";
 import { McpToolError } from "./errors";
 
 const MIME_BY_EXT: Record<string, string> = {
@@ -43,15 +44,26 @@ const LARGE_UPLOAD_MIME_BY_EXT: Record<string, "image/jpg" | "image/jpeg" | "ima
   ".pdf": "application/pdf",
 };
 
+/** Hosted servers must never read their own disk on behalf of a caller. */
+export function assertLocalFilesAllowed(ctx: Pick<ServerContext, "mode">, ref: string, kind: "media" | "CSV"): void {
+  if (ctx.mode !== "hosted") return;
+  throw new McpToolError(
+    "LOCAL_FILES_NOT_SUPPORTED",
+    `"${ref}" is not a public https:// URL. This bundle.social server runs remotely and cannot read files from your computer; pass a public https:// URL to the ${kind} instead.`,
+  );
+}
+
 /**
  * Upload one media reference (a public URL, or — in stdio mode — a local file
  * path) and return the resulting upload object. Local files larger than ~90 MB
  * are uploaded via the large-upload flow automatically.
  */
-export async function uploadMediaRef(client: Bundlesocial, teamId: string, ref: string) {
+export async function uploadMediaRef(ctx: Pick<ServerContext, "client" | "mode">, teamId: string, ref: string) {
+  const { client } = ctx;
   if (isUrl(ref)) {
     return client.upload.uploadCreateFromUrl({ requestBody: { teamId, url: ref.trim() } });
   }
+  assertLocalFilesAllowed(ctx, ref, "media");
   const absolutePath = path.resolve(ref);
   let buffer: Buffer;
   try {
@@ -93,10 +105,10 @@ async function uploadLargeMedia(client: Bundlesocial, teamId: string, absolutePa
   return client.upload.uploadFinalizeLargeUpload({ requestBody: { teamId, path: init.path } });
 }
 
-export async function uploadMediaRefs(client: Bundlesocial, teamId: string, refs: string[]): Promise<string[]> {
+export async function uploadMediaRefs(ctx: Pick<ServerContext, "client" | "mode">, teamId: string, refs: string[]): Promise<string[]> {
   const ids: string[] = [];
   for (const ref of refs) {
-    const upload = await uploadMediaRef(client, teamId, ref);
+    const upload = await uploadMediaRef(ctx, teamId, ref);
     ids.push(upload.id);
   }
   return ids;

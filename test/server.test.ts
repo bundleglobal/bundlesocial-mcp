@@ -143,9 +143,11 @@ const fakeTeams = (count: number, start = 0) =>
 
 const servers: McpServer[] = [];
 
-async function connect(options?: { defaultTeamId?: string | null }) {
+async function connect(options?: { defaultTeamId?: string | null; mode?: "stdio" | "hosted"; readOnly?: boolean }) {
   const server = createServer({
     apiKey: "test-key",
+    mode: options?.mode,
+    readOnly: options?.readOnly,
     defaultTeamId: options?.defaultTeamId === null ? undefined : options?.defaultTeamId ?? "team_test",
   });
   servers.push(server);
@@ -1083,5 +1085,94 @@ describe("check_setup", () => {
     const result = json as { ok: boolean; checks: Array<{ name: string; status: string }> };
     expect(result.ok).toBe(false);
     expect(result.checks.find((c) => c.name === "api_reachable")?.status).toBe("fail");
+  });
+});
+
+describe("tool annotations", () => {
+  it("registers only read-only tools when readOnly is set", async () => {
+    const all = (await (await connect()).listTools()).tools;
+    const readOnly = (await (await connect({ readOnly: true })).listTools()).tools;
+    expect(readOnly.length).toBeGreaterThan(0);
+    expect(readOnly.length).toBe(all.filter((t) => t.annotations?.readOnlyHint).length);
+    expect(readOnly.every((t) => t.annotations?.readOnlyHint === true)).toBe(true);
+    expect(readOnly.find((t) => t.name === "create_post")).toBeUndefined();
+  });
+
+  it("gives every tool a title and exactly one of readOnlyHint / destructiveHint", async () => {
+    const client = await connect();
+    const { tools } = await client.listTools();
+    const bad = tools.filter((tool) => {
+      const a = tool.annotations ?? {};
+      return !tool.title || (a.readOnlyHint === true) === (a.destructiveHint === true);
+    });
+    expect(bad.map((tool) => tool.name)).toEqual([]);
+  });
+});
+
+describe("hosted mode", () => {
+  it("sends x-bundle-client with the mode", async () => {
+    const { Bundlesocial } = await import("bundlesocial");
+    await connect({ mode: "hosted" });
+    const options = vi.mocked(Bundlesocial).mock.calls.at(-1)?.[1] as { HEADERS?: Record<string, string> };
+    expect(options.HEADERS?.["x-bundle-client"]).toMatch(/^mcp-hosted\//);
+  });
+
+  it("refuses local media paths in upload_media", async () => {
+    const client = await connect({ mode: "hosted" });
+    const { json, isError } = await callTool(client, "upload_media", { source: "/etc/passwd" });
+    expect(isError).toBe(true);
+    expect((json as { error: { code: string } }).error.code).toBe("LOCAL_FILES_NOT_SUPPORTED");
+    expect(sdk.upload.uploadCreate).not.toHaveBeenCalled();
+  });
+
+  it("refuses local media paths in create_post", async () => {
+    const client = await connect({ mode: "hosted" });
+    const { json, isError } = await callTool(client, "create_post", { content: "hi", platforms: ["x"], media: ["./secret.png"] });
+    expect(isError).toBe(true);
+    expect((json as { error: { code: string } }).error.code).toBe("LOCAL_FILES_NOT_SUPPORTED");
+    expect(sdk.post.postCreate).not.toHaveBeenCalled();
+  });
+
+  it("still uploads public URLs", async () => {
+    sdk.upload.uploadCreateFromUrl.mockResolvedValue({ id: "up_url" });
+    const client = await connect({ mode: "hosted" });
+    const { isError } = await callTool(client, "upload_media", { source: "https://example.com/a.png" });
+    expect(isError).toBe(false);
+    expect(sdk.upload.uploadCreateFromUrl).toHaveBeenCalled();
+  });
+
+  it("refuses local CSV paths and private CSV URLs", async () => {
+    const client = await connect({ mode: "hosted" });
+    const local = await callTool(client, "create_post_csv_import", { source: "/tmp/import.csv" });
+    expect((local.json as { error: { code: string } }).error.code).toBe("LOCAL_FILES_NOT_SUPPORTED");
+    const loopback = await callTool(client, "create_post_csv_import", { source: "https://127.0.0.1/import.csv" });
+    expect((loopback.json as { error: { code: string } }).error.code).toBe("URL_NOT_PUBLIC");
+    const v6 = await callTool(client, "create_post_csv_import", { source: "https://[::1]/import.csv" });
+    expect((v6.json as { error: { code: string } }).error.code).toBe("URL_NOT_PUBLIC");
+    const named = await callTool(client, "create_post_csv_import", { source: "https://localhost/import.csv" });
+    expect((named.json as { error: { code: string } }).error.code).toBe("URL_NOT_PUBLIC");
+    const plain = await callTool(client, "create_post_csv_import", { source: "http://example.com/import.csv" });
+    expect((plain.json as { error: { code: string } }).error.code).toBe("INVALID_URL");
+    expect(sdk.postCsv.postCsvCreate).not.toHaveBeenCalled();
+  });
+});
+
+describe("isPrivateAddress", () => {
+  it.each([
+    ["127.0.0.1", true],
+    ["10.1.2.3", true],
+    ["172.20.0.1", true],
+    ["192.168.1.1", true],
+    ["169.254.169.254", true],
+    ["100.64.0.1", true],
+    ["::1", true],
+    ["fd00::1", true],
+    ["::ffff:10.0.0.1", true],
+    ["8.8.8.8", false],
+    ["172.32.0.1", false],
+    ["2606:4700::1111", false],
+  ])("%s → %s", async (address, expected) => {
+    const { isPrivateAddress } = await import("../src/safe-fetch");
+    expect(isPrivateAddress(address)).toBe(expected);
   });
 });

@@ -197,7 +197,7 @@ Add to `~/.cursor/mcp.json` (global) or `.cursor/mcp.json` (project):
 
 ### Remote MCP (planned)
 
-A hosted server at `https://mcp.bundle.social` with `Authorization: Bearer <key>` auth is on the roadmap. Until then, run the stdio server locally as above.
+A hosted server at `https://mcp.bundle.social` with browser sign-in (OAuth) is on the roadmap. Until then, run the stdio server locally as above.
 
 ## Try it without a client
 
@@ -237,7 +237,17 @@ npm test            # vitest — every tool exercised end-to-end via an in-memor
 npm run typecheck
 ```
 
-`createServer({ apiKey, apiUrl?, defaultTeamId? })` (from `./server`) builds the `McpServer` and is transport-agnostic — convenient for embedding or for a future HTTP transport.
+The package also exports a library entry for embedding the tools in another transport:
+
+```ts
+import { createServer } from "bundlesocial-mcp";
+
+const server = createServer({ apiKey, mode: "hosted", defaultTeamId });
+```
+
+`createServer({ apiKey, apiUrl?, defaultTeamId?, mode?, clientId? })` builds the `McpServer` and is transport-agnostic. `mode: "hosted"` is for servers that run remotely: local file paths are refused (media and CSV sources must be public `https://` URLs), and CSV URLs are fetched without redirects and only from public addresses. Every request sends `x-bundle-client` (`mcp/<version>`, or `mcp-hosted/<version>` when hosted) so usage can be measured.
+
+Every tool is annotated with a `title` and either `readOnlyHint` or `destructiveHint`; anything that writes, including creating a post, is marked destructive so clients ask before running it.
 
 Releases are automated with [semantic-release](https://semantic-release.gitbook.io/) on merge to `main` (conventional commits).
 
