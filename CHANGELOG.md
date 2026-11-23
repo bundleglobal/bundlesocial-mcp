@@ -1,3 +1,10 @@
+# [1.6.0](https://github.com/bundleglobal/bundlesocial-mcp/compare/v1.5.0...v1.6.0) (2026-11-23)
+
+
+### Features
+
+* local files on the hosted server through direct (signed) uploads ([#6](https://github.com/bundleglobal/bundlesocial-mcp/issues/6)) ([75700d6](https://github.com/bundleglobal/bundlesocial-mcp/commit/75700d6cd59edbf1ea7aa68f7cd8445594c1887f))
+
 # [1.5.0](https://github.com/bundleglobal/bundlesocial-mcp/compare/v1.4.0...v1.5.0) (2026-11-23)
 
 
