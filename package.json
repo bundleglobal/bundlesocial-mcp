@@ -1,8 +1,8 @@
 {
   "name": "bundlesocial-mcp",
-  "version": "1.6.0",
+  "version": "1.7.0",
   "mcpName": "io.github.bundleglobal/bundlesocial-mcp",
-  "description": "Model Context Protocol server for the bundle.social social-media API \u2014 post to 14+ platforms from Claude, Cursor and other MCP clients.",
+  "description": "Model Context Protocol server for the bundle.social social-media API — post to 14+ platforms from Claude, Cursor and other MCP clients.",
   "keywords": [
     "bundle.social",
     "bundlesocial",

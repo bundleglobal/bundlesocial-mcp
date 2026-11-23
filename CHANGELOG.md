@@ -1,3 +1,10 @@
+# [1.7.0](https://github.com/bundleglobal/bundlesocial-mcp/compare/v1.6.0...v1.7.0) (2026-11-23)
+
+
+### Features
+
+* every public API action through search_api_actions and call_api_* ([#7](https://github.com/bundleglobal/bundlesocial-mcp/issues/7)) ([f0de9d4](https://github.com/bundleglobal/bundlesocial-mcp/commit/f0de9d495e97e63afac687a4bf3a49149ec0a84d))
+
 # [1.6.0](https://github.com/bundleglobal/bundlesocial-mcp/compare/v1.5.0...v1.6.0) (2026-11-23)
 
 
