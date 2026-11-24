@@ -100,7 +100,7 @@ Team-scoped tools take an optional `teamId`, either a team id or the exact team 
 
 | Tool | Description |
 |---|---|
-| `create_post_import` | Start an async import of an account's recent posts (post history) into bundle.social. Platforms: FACEBOOK, INSTAGRAM, THREADS, TIKTOK, YOUTUBE, LINKEDIN, PINTEREST, REDDIT, MASTODON, BLUESKY. |
+| `create_post_import` | Start an async import of an account's recent posts (post history) into bundle.social. Platforms: FACEBOOK, INSTAGRAM, THREADS, TIKTOK, YOUTUBE, LINKEDIN, PINTEREST, REDDIT, MASTODON, BLUESKY, TWITTER, SNAPCHAT. |
 | `list_post_imports` / `get_post_import` | List / fetch post-history import jobs. |
 | `list_imported_posts` | List imported posts (with analytics) for an account on a platform. |
 | `delete_imported_posts` | Bulk-delete imported posts and their analytics (destructive). |

@@ -387,6 +387,12 @@ const POST: Record<Platform, OperationReference> = {
       { name: "madeForKids", type: "boolean", required: true, notes: "Required-ish — YouTube needs you to declare this." },
       { name: "containsSyntheticMedia", type: "boolean", required: false, notes: "Mark AI-generated content." },
       { name: "hasPaidProductPlacement", type: "boolean", required: false, notes: "Declare paid placements." },
+      {
+        name: "embeddable",
+        type: "boolean",
+        required: false,
+        notes: "Whether other websites can embed the video. Leave it out to keep YouTube's default.",
+      },
     ],
     example: { YOUTUBE: { type: "SHORT", text: "Launch BTS", description: "Behind the scenes…", privacy: "PUBLIC", madeForKids: false } },
   },
