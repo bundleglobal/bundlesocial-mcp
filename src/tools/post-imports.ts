@@ -8,7 +8,7 @@ import { registerTool } from "../register-tool";
 
 type PostImportPlatform = NonNullable<PostImportCreateData["requestBody"]>["socialAccountType"];
 
-const platformSchema = z.string().min(1).describe("Platform name/alias. Post-history import is available on FACEBOOK, INSTAGRAM, THREADS, TIKTOK, YOUTUBE, LINKEDIN, PINTEREST, REDDIT, MASTODON, BLUESKY.");
+const platformSchema = z.string().min(1).describe("Platform name/alias. Post-history import is available on FACEBOOK, INSTAGRAM, THREADS, TIKTOK, YOUTUBE, LINKEDIN, PINTEREST, REDDIT, MASTODON, BLUESKY, TWITTER, SNAPCHAT.");
 
 export function registerPostImportTools(server: McpServer, ctx: ServerContext): void {
   registerTool(
