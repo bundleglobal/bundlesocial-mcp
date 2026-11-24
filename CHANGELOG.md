@@ -1,3 +1,10 @@
+# [1.8.0](https://github.com/bundleglobal/bundlesocial-mcp/compare/v1.7.0...v1.8.0) (2026-11-24)
+
+
+### Features
+
+* SDK 2.72.0 with Instagram post delete, YouTube embeddable and Snapchat import ([#8](https://github.com/bundleglobal/bundlesocial-mcp/issues/8)) ([5438514](https://github.com/bundleglobal/bundlesocial-mcp/commit/5438514e02743f26836134bcda542a74348b48f7))
+
 # [1.7.0](https://github.com/bundleglobal/bundlesocial-mcp/compare/v1.6.0...v1.7.0) (2026-11-23)
 
 
