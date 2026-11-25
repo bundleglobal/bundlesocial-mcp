@@ -1,12 +1,24 @@
 # bundlesocial-mcp
 
-[Model Context Protocol](https://modelcontextprotocol.io) server for the [bundle.social](https://bundle.social) social-media API. It lets MCP clients — Claude Desktop, Claude Code, Cursor, and anything else that speaks MCP — post, schedule, list and analyze content across 15+ platforms (X, Instagram, TikTok, LinkedIn, YouTube, Facebook, Pinterest, Reddit, Threads, Bluesky, Mastodon, Discord, Slack, Google Business Profile, Snapchat).
+[Model Context Protocol](https://modelcontextprotocol.io) server for the [bundle.social](https://bundle.social) social-media API. It lets MCP clients — Claude, ChatGPT, Claude Code, Cursor, Codex, and anything else that speaks MCP — post, schedule, list and analyze content across 15+ platforms (X, Instagram, TikTok, LinkedIn, YouTube, Facebook, Pinterest, Reddit, Threads, Bluesky, Mastodon, Discord, Slack, Google Business Profile, Snapchat).
 
 It's a thin wrapper over the official [`bundlesocial`](https://www.npmjs.com/package/bundlesocial) Node SDK. Same surface as [`bundlesocial-cli`](https://www.npmjs.com/package/bundlesocial-cli) — posting, comments, media, analytics, team & integration management, and post-history/comment/CSV imports — exposed as MCP tools.
 
-> Ships as a **local stdio server** today (`npx bundlesocial-mcp`). A hosted remote HTTP server at `mcp.bundle.social` is planned.
+## Quick start: hosted server
 
-## Prerequisites
+The same tools run at `https://mcp.bundle.social` (Streamable HTTP). Add that URL to your client and sign in with your bundle.social account: nothing to install and no API key to copy. You choose **Full access** or **Read only** and can disconnect the app any time in [Connected apps](https://bundle.social/dashboard/organization/connected-apps).
+
+- **Claude** (claude.ai, Desktop, mobile): Customize → Connectors → + Add → Add custom connector, URL `https://mcp.bundle.social`, then Connect.
+- **ChatGPT**: Settings → Apps & Connectors → Developer mode, create an app with URL `https://mcp.bundle.social` and Authentication OAuth, then Connect.
+- **Claude Code**: `claude mcp add --transport http bundlesocial https://mcp.bundle.social`, then `/mcp` → Authenticate.
+- **Cursor**: `{ "mcpServers": { "bundlesocial": { "url": "https://mcp.bundle.social" } } }` in `~/.cursor/mcp.json`, then Connect in Cursor Settings → MCP.
+- **Codex**: `[mcp_servers.bundlesocial]` with `url = "https://mcp.bundle.social"` in `~/.codex/config.toml`, then `codex mcp login bundlesocial`.
+
+For scripts, scheduled agents and clients without sign-in, send an API key instead (see [Hosted server with an API key](#hosted-server-with-an-api-key)). Setup for every client: <https://info.bundle.social/api-reference/mcp>.
+
+Run it locally (`npx bundlesocial-mcp`, below) when the agent needs to read files from your disk.
+
+## Prerequisites (local server)
 
 - Node.js 20+
 - A bundle.social API key — create one at <https://bundle.social/dashboard/organization/api-keys>
@@ -19,7 +31,7 @@ Team-scoped tools take an optional `teamId`, either a team id or the exact team 
 
 | Tool | Description |
 |---|---|
-| `check_setup` | Self-diagnosis: API key present, API reachable, API key valid, org API access, team resolution, connected integrations, posts quota. Returns `{ ok, checks: [...] }`. Run it first. |
+| `check_setup` | Self-diagnosis: credentials present (connection or API key), API reachable, credentials valid, org API access, team resolution, connected integrations, posts quota. Returns `{ ok, checks: [...] }`. Run it first. |
 
 ### Reference
 
@@ -142,9 +154,9 @@ The action list is generated from the `bundlesocial` SDK (`npm run generate:acti
 
 `create_post` / `schedule_post` target platforms by **name** (`x`, `tiktok`, `instagram`, `youtube`, `facebook`, `threads`, `linkedin`, `pinterest`, `reddit`, `mastodon`, `discord`, `slack`, `bluesky`, `gbp`, `snapchat`) or by **integration id** (from `list_integrations`). Put platform-required fields under `platformSettings` keyed by platform — e.g. Reddit `sr`, Pinterest `boardName`, TikTok `privacy`, YouTube `madeForKids`/`privacyStatus`, Instagram/Facebook `type` — or pass the full `data` object verbatim. The complete per-platform parameter reference is at **<https://docs.bundle.social/api-reference/platform-parameters>**.
 
-## Configuration
+## Configuration (local server)
 
-The server reads these environment variables (CLI flags override them):
+The local server reads these environment variables (CLI flags override them):
 
 | Env var | Flag | Required | Purpose |
 |---|---|---|---|
@@ -206,9 +218,9 @@ Add to `~/.cursor/mcp.json` (global) or `.cursor/mcp.json` (project):
 }
 ```
 
-### Hosted server
+### Hosted server with an API key
 
-The same tools run at `https://mcp.bundle.social` (Streamable HTTP), so there is nothing to install. Send your API key as `Authorization: Bearer YOUR_API_KEY` (or `x-api-key`), and optionally a default team as `x-bundle-team-id`:
+Signing in (see [Quick start](#quick-start-hosted-server)) is the default. For automation, send your API key as `Authorization: Bearer YOUR_API_KEY` (or `x-api-key`), and optionally a default team as `x-bundle-team-id`:
 
 ```bash
 claude mcp add --transport http bundlesocial https://mcp.bundle.social \
