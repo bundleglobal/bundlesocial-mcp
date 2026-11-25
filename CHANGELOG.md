@@ -1,3 +1,10 @@
+# [1.11.0](https://github.com/bundleglobal/bundlesocial-mcp/compare/v1.10.0...v1.11.0) (2026-11-25)
+
+
+### Features
+
+* upload_media takes files attached in ChatGPT ([#14](https://github.com/bundleglobal/bundlesocial-mcp/issues/14)) ([7aa6b76](https://github.com/bundleglobal/bundlesocial-mcp/commit/7aa6b76455a08a2327540b57bd060f0dab9341f4))
+
 # [1.10.0](https://github.com/bundleglobal/bundlesocial-mcp/compare/v1.9.2...v1.10.0) (2026-11-25)
 
 
