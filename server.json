@@ -2,7 +2,7 @@
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-09-29/server.schema.json",
   "name": "io.github.bundleglobal/bundlesocial-mcp",
   "description": "Post, schedule, reply and analyze across 15 social platforms with bundle.social.",
-  "version": "1.9.2",
+  "version": "1.10.0",
   "repository": {
     "url": "https://github.com/bundleglobal/bundlesocial-mcp",
     "source": "github"
@@ -19,7 +19,7 @@
       "registryType": "npm",
       "registryBaseUrl": "https://registry.npmjs.org",
       "identifier": "bundlesocial-mcp",
-      "version": "1.9.2",
+      "version": "1.10.0",
       "transport": {
         "type": "stdio"
       },
@@ -32,7 +32,7 @@
         },
         {
           "name": "BUNDLESOCIAL_TEAM_ID",
-          "description": "Default team id. Optional \u2014 needed only if your organization has more than one team.",
+          "description": "Default team id. Optional — needed only if your organization has more than one team.",
           "isRequired": false,
           "isSecret": false
         },

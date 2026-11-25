@@ -1,3 +1,10 @@
+# [1.10.0](https://github.com/bundleglobal/bundlesocial-mcp/compare/v1.9.2...v1.10.0) (2026-11-25)
+
+
+### Features
+
+* upload links, explicit tool hints, optional generic API tools ([#13](https://github.com/bundleglobal/bundlesocial-mcp/issues/13)) ([2edb7ac](https://github.com/bundleglobal/bundlesocial-mcp/commit/2edb7ac1ce7e426b6bbd4b6e67327e818966c0ce))
+
 ## [1.9.2](https://github.com/bundleglobal/bundlesocial-mcp/compare/v1.9.1...v1.9.2) (2026-11-25)
 
 
