@@ -49,7 +49,17 @@ const HOSTED_NOTE =
 export function createServer(options: CreateServerOptions): McpServer {
   const mode: ServerMode = options.mode ?? "stdio";
   const server = new McpServer(
-    { name: "bundlesocial", version: VERSION },
+    {
+      name: "bundlesocial",
+      title: "bundle.social",
+      version: VERSION,
+      websiteUrl: "https://bundle.social",
+      // Shown by clients next to the server's name.
+      icons: [
+        { src: "https://bundle.social/icon.svg", mimeType: "image/svg+xml", sizes: ["any"] },
+        { src: "https://bundle.social/apple-touch-icon.png", mimeType: "image/png", sizes: ["180x180"] },
+      ],
+    },
     {
       capabilities: { tools: {} },
       instructions: mode === "hosted" ? INSTRUCTIONS + HOSTED_NOTE : INSTRUCTIONS,
