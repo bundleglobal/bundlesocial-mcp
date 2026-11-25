@@ -331,10 +331,13 @@ describe("list_integrations", () => {
     expect(sdk.team.teamGetList).toHaveBeenCalledTimes(2);
     expect(sdk.team.teamGetList).toHaveBeenNthCalledWith(1, { offset: 0, limit: 100 });
     expect(sdk.team.teamGetList).toHaveBeenNthCalledWith(2, { offset: 100, limit: 100 });
-    const error = (json as { error: { code: string; details: { teams: Array<{ id: string }> } } }).error;
+    const error = (json as { error: { code: string; message: string; details: { teams: Array<{ id: string }>; totalTeams: number } } })
+      .error;
     expect(error.code).toBe("TEAM_ID_REQUIRED");
-    expect(error.details.teams).toHaveLength(102);
-    expect(error.details.teams[101]).toEqual({ id: "team_101", name: "Team 101" });
+    // Both pages were counted, but only a sample is listed.
+    expect(error.details.totalTeams).toBe(102);
+    expect(error.details.teams).toHaveLength(20);
+    expect(error.message).toContain("list_teams");
   });
 
   it("stops paging at the safety cap and warns on stderr", async () => {
@@ -347,7 +350,7 @@ describe("list_integrations", () => {
       const client = await connect({ defaultTeamId: null });
       const { json } = await callTool(client, "create_post", { content: "Hi", platforms: ["x"] });
       expect(sdk.team.teamGetList).toHaveBeenCalledTimes(100);
-      expect((json as { error: { details: { teams: unknown[] } } }).error.details.teams).toHaveLength(10_000);
+      expect((json as { error: { details: { totalTeams: number } } }).error.details.totalTeams).toBe(10_000);
       expect(stderr).toHaveBeenCalledWith(expect.stringContaining("team list truncated"));
     } finally {
       stderr.mockRestore();
@@ -410,6 +413,17 @@ describe("team resolution", () => {
     expect(checks.map((c) => c.name)).toEqual(["connection", "api_reachable", "authentication"]);
     expect(checks[2].message).toContain(reconnect);
     expect(checks[2].message).not.toContain("API key");
+  });
+
+  it("check_setup lists only a sample of many teams", async () => {
+    sdk.organization.organizationGetPostsUsage.mockResolvedValue({ used: 1, limit: 10, remaining: 9 });
+    sdk.team.teamGetList.mockResolvedValue({ items: fakeTeams(45), total: 45 });
+    const client = await connect({ defaultTeamId: null });
+    const { json } = await callTool(client, "check_setup");
+    const team = (json as { checks: Array<Record<string, unknown>> }).checks.find((c) => c.name === "team");
+    expect(team?.teams).toHaveLength(20);
+    expect(team?.totalTeams).toBe(45);
+    expect(team?.message).toContain("list_teams");
   });
 
   it("check_setup treats several teams as normal, not a warning", async () => {

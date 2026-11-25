@@ -61,7 +61,18 @@ export const teamIdSchema = z
   );
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-const teamSummary = (teams: TeamListItem[]) => teams.map((team) => ({ id: team.id, name: team.name }));
+/** How many teams a tool result or error lists; list_teams (with search) has the rest. */
+export const TEAMS_SHOWN = 20;
+
+/** Up to TEAMS_SHOWN teams as { id, name }, plus the total when some were left out. */
+export function teamSample(teams: Array<{ id: string; name: string }>): {
+  teams: Array<{ id: string; name: string }>;
+  totalTeams?: number;
+} {
+  const shown = teams.slice(0, TEAMS_SHOWN).map((team) => ({ id: team.id, name: team.name }));
+  return teams.length > shown.length ? { teams: shown, totalTeams: teams.length } : { teams: shown };
+}
+const moreTeamsHint = (count: number) => (count > TEAMS_SHOWN ? ` Showing ${TEAMS_SHOWN}; list_teams (with search) has the rest.` : "");
 
 /**
  * Resolve the team to operate on: explicit `teamId` (an id or a team name) > configured
@@ -76,13 +87,17 @@ export async function resolveTeamId(ctx: ServerContext, teamIdArg?: string): Pro
     const byName = teams.filter((team) => team.name?.trim().toLowerCase() === value.toLowerCase());
     if (byName.length === 1) return byName[0].id;
     if (byName.length > 1) {
-      throw new McpToolError("TEAM_AMBIGUOUS", `${byName.length} teams are named "${value}". Pass the team id instead.`, {
-        teams: teamSummary(byName),
-      });
+      throw new McpToolError(
+        "TEAM_AMBIGUOUS",
+        `${byName.length} teams are named "${value}". Pass the team id instead.${moreTeamsHint(byName.length)}`,
+        teamSample(byName),
+      );
     }
-    throw new McpToolError("TEAM_NOT_FOUND", `No team with id or name "${value}". Pick one of the teams listed in details.`, {
-      teams: teamSummary(teams),
-    });
+    throw new McpToolError(
+      "TEAM_NOT_FOUND",
+      `No team with id or name "${value}". Pick one of the teams listed in details.${moreTeamsHint(teams.length)}`,
+      teamSample(teams),
+    );
   }
   if (ctx.defaultTeamId) return ctx.defaultTeamId;
   const teams = await listAllTeams(ctx.client);
@@ -92,7 +107,7 @@ export async function resolveTeamId(ctx: ServerContext, teamIdArg?: string): Pro
   }
   throw new McpToolError(
     "TEAM_ID_REQUIRED",
-    `This organization has ${teams.length} teams and no default team. Pass "teamId" (a team id or name) from the teams listed in details.`,
-    { teams: teamSummary(teams) },
+    `This organization has ${teams.length} teams and no default team. Pass "teamId" (a team id or name) from the teams listed in details.${moreTeamsHint(teams.length)}`,
+    teamSample(teams),
   );
 }
