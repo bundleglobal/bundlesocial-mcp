@@ -145,9 +145,15 @@ const fakeTeams = (count: number, start = 0) =>
 
 const servers: McpServer[] = [];
 
-async function connect(options?: { defaultTeamId?: string | null; mode?: "stdio" | "hosted"; readOnly?: boolean }) {
+async function connect(options?: {
+  defaultTeamId?: string | null;
+  mode?: "stdio" | "hosted";
+  readOnly?: boolean;
+  auth?: "api-key" | "oauth";
+}) {
   const server = createServer({
     apiKey: "test-key",
+    auth: options?.auth,
     mode: options?.mode,
     readOnly: options?.readOnly,
     defaultTeamId: options?.defaultTeamId === null ? undefined : options?.defaultTeamId ?? "team_test",
@@ -390,6 +396,20 @@ describe("team resolution", () => {
     const { json } = await callTool(client, "list_integrations");
     expect(sdk.team.teamGetTeam).not.toHaveBeenCalled();
     expect((json as { teams: unknown[] }).teams).toHaveLength(11);
+  });
+
+  it("check_setup passes on the API's reason when a connection was disconnected", async () => {
+    const { ApiError } = await import("bundlesocial");
+    const reconnect = "This connection has expired or was disconnected. Reconnect bundle.social.";
+    sdk.organization.organizationGetOrganization.mockRejectedValue(
+      new (ApiError as unknown as new (status: number, body: unknown, text: string) => Error)(401, { message: reconnect }, "Unauthorized"),
+    );
+    const client = await connect({ auth: "oauth" });
+    const { json } = await callTool(client, "check_setup");
+    const checks = (json as { ok: boolean; checks: Array<{ name: string; status: string; message: string }> }).checks;
+    expect(checks.map((c) => c.name)).toEqual(["connection", "api_reachable", "authentication"]);
+    expect(checks[2].message).toContain(reconnect);
+    expect(checks[2].message).not.toContain("API key");
   });
 
   it("check_setup treats several teams as normal, not a warning", async () => {
