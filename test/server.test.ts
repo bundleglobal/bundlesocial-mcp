@@ -608,6 +608,34 @@ describe("upload links", () => {
 });
 
 describe("upload_media", () => {
+  it("takes a file attached in ChatGPT through its download_url", async () => {
+    sdk.upload.uploadCreateFromUrl.mockResolvedValue({ id: "up_chat", type: "image" });
+    const client = await connect({ mode: "hosted" });
+    const tool = (await client.listTools()).tools.find((candidate) => candidate.name === "upload_media");
+    expect(tool?._meta).toEqual({ "openai/fileParams": ["file"] });
+
+    const file = { download_url: "https://files.example.com/abc?sig=1", file_id: "file_1", mime_type: "image/png" };
+    const { json } = await callTool(client, "upload_media", { file });
+    expect(sdk.upload.uploadCreateFromUrl).toHaveBeenCalledWith({
+      requestBody: { teamId: "team_test", url: "https://files.example.com/abc?sig=1" },
+    });
+    expect(json).toMatchObject({ id: "up_chat" });
+  });
+
+  it("asks for a source or a file when neither is given", async () => {
+    const client = await connect();
+    const { isError, json } = await callTool(client, "upload_media", {});
+    expect(isError).toBe(true);
+    expect((json as { error: { code: string } }).error.code).toBe("MISSING_SOURCE");
+  });
+
+  it("points a hosted local path at create_upload_link", async () => {
+    const client = await connect({ mode: "hosted" });
+    const { isError, json } = await callTool(client, "upload_media", { source: "/mnt/data/photo.jpg" });
+    expect(isError).toBe(true);
+    expect((json as { error: { message: string } }).error.message).toContain("create_upload_link");
+  });
+
   it("uploads from a URL", async () => {
     sdk.upload.uploadCreateFromUrl.mockResolvedValue({ id: "up_url", type: "image" });
     const client = await connect();
