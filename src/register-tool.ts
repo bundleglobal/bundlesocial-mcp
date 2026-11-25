@@ -14,6 +14,8 @@ export interface ToolConfig<Shape extends ZodRawShape> {
     idempotentHint?: boolean;
     openWorldHint?: boolean;
   };
+  /** Client-specific tool metadata, e.g. `openai/fileParams` for ChatGPT file inputs. */
+  _meta?: Record<string, unknown>;
 }
 
 /**

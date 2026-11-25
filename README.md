@@ -103,7 +103,7 @@ Team-scoped tools take an optional `teamId`, either a team id or the exact team 
 
 | Tool | Description |
 |---|---|
-| `upload_media` | Upload an image/video/document from a public URL (or local path in stdio mode). Local files >90 MB use the large-upload flow automatically (.jpg/.jpeg/.png/.gif/.mp4/.pdf only above that size). Returns the upload object — pass its `id` to `create_post`/`schedule_post` via `data` (e.g. `{"TWITTER":{"text":"hi","uploadIds":["<id>"]}}`). |
+| `upload_media` | Upload an image/video/document from a public URL, a file attached in ChatGPT (`file`, via `openai/fileParams`), or a local path in stdio mode. Local files >90 MB use the large-upload flow automatically (.jpg/.jpeg/.png/.gif/.mp4/.pdf only above that size). Returns the upload object — pass its `id` to `create_post`/`schedule_post` via `data` (e.g. `{"TWITTER":{"text":"hi","uploadIds":["<id>"]}}`). |
 | `create_upload_link` / `get_upload_link` | A link the user opens in their browser to add files (JPG, PNG, GIF, MP4, MOV, PDF, up to 5 GB) without signing in, for chats that can't send a file (claude.ai, ChatGPT). `get_upload_link` returns the status and the upload ids. |
 | `list_media` / `get_media` | List / fetch media uploads (filter by type and USED/UNUSED). |
 | `delete_media` / `delete_media_many` | Delete one or several uploads (destructive). |

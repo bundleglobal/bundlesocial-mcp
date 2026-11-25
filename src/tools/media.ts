@@ -1,7 +1,7 @@
 import { z } from "zod";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { type ServerContext, resolveTeamId, teamIdSchema } from "../client";
-import { jsonResult } from "../errors";
+import { McpToolError, jsonResult } from "../errors";
 import { uploadMediaRef } from "../media";
 import { registerTool } from "../register-tool";
 
@@ -53,16 +53,35 @@ export function registerMediaTools(server: McpServer, ctx: ServerContext): void 
     {
       title: "Upload media",
       description:
-        "Upload a media file (image, video or document) to a bundle.social team from a public https:// URL — or, when this server runs in stdio mode, a local file path. Local files larger than ~90 MB are uploaded via the large-upload flow automatically (only .jpg/.jpeg/.png/.gif/.mp4/.mov/.pdf are supported above that size). On the hosted server, send local files with init_large_upload instead. Returns the upload object; pass its `id` to create_post/schedule_post via the `data` argument (e.g. {\"TWITTER\":{\"text\":\"hi\",\"uploadIds\":[\"<id>\"]}}).",
+        "Upload a media file (image, video or document) to a bundle.social team from a public https:// URL, a file the user attached in ChatGPT (`file`), or, when this server runs in stdio mode, a local file path. Local files larger than ~90 MB are uploaded via the large-upload flow automatically (only .jpg/.jpeg/.png/.gif/.mp4/.mov/.pdf are supported above that size). For a file on the user's device that none of these reach, create_upload_link gives the user a link to add it. Returns the upload object; pass its `id` to create_post/schedule_post via the `data` argument (e.g. {\"TWITTER\":{\"text\":\"hi\",\"uploadIds\":[\"<id>\"]}}).",
       inputSchema: {
         teamId: teamIdSchema,
-        source: z.string().min(1).describe("A public https:// URL, or a local file path (stdio mode only)."),
+        source: z
+          .string()
+          .min(1)
+          .optional()
+          .describe("A public https:// URL, or a local file path (stdio mode only). Leave out when passing `file`."),
+        file: z
+          .object({
+            download_url: z.string().url(),
+            file_id: z.string(),
+            mime_type: z.string().optional(),
+            file_name: z.string().optional(),
+          })
+          .optional()
+          .describe("A file the user attached in the chat, as ChatGPT passes it. Leave out when passing `source`."),
       },
       annotations: { destructiveHint: true, openWorldHint: true },
+      // ChatGPT fills `file` with the user's attachment and a temporary download_url.
+      _meta: { "openai/fileParams": ["file"] },
     },
-    async ({ teamId, source }) => {
+    async ({ teamId, source, file }) => {
+      const ref = file?.download_url ?? source;
+      if (!ref) {
+        throw new McpToolError("MISSING_SOURCE", "Pass `source` (a public https:// URL) or `file` (an attached file).");
+      }
       const id = await resolveTeamId(ctx, teamId);
-      return jsonResult(await uploadMediaRef(ctx, id, source));
+      return jsonResult(await uploadMediaRef(ctx, id, ref));
     },
   );
 

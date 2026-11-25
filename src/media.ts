@@ -54,7 +54,7 @@ export function assertLocalFilesAllowed(ctx: Pick<ServerContext, "mode">, ref: s
   throw new McpToolError(
     "LOCAL_FILES_NOT_SUPPORTED",
     kind === "media"
-      ? `"${ref}" is not a public https:// URL. This bundle.social server runs remotely and cannot read files from your computer. Pass a public https:// URL, or, if you can run shell commands, call init_large_upload, PUT the file to the returned url (curl -X PUT -H "Content-Type: <mimeType>" --upload-file "${ref}" "<url>"), then call finalize_large_upload.`
+      ? `"${ref}" is not a public https:// URL. This bundle.social server runs remotely and cannot read files from the user's device or from a chat's sandbox. Call create_upload_link and give the user the link to add the file themselves, then get_upload_link for the upload id. A public https:// URL also works. Only a client with a shell and open network access can instead call init_large_upload, PUT the file to the returned url, then call finalize_large_upload.`
       : `"${ref}" is not a public https:// URL. This bundle.social server runs remotely and cannot read files from your computer; pass a public https:// URL to the ${kind} instead.`,
   );
 }
