@@ -1,3 +1,10 @@
+## [1.9.2](https://github.com/bundleglobal/bundlesocial-mcp/compare/v1.9.1...v1.9.2) (2026-11-25)
+
+
+### Bug Fixes
+
+* list at most 20 teams in check_setup and team errors ([#11](https://github.com/bundleglobal/bundlesocial-mcp/issues/11)) ([f007f8d](https://github.com/bundleglobal/bundlesocial-mcp/commit/f007f8d99b44748b14d8f62238c51a24e9993658))
+
 ## [1.9.1](https://github.com/bundleglobal/bundlesocial-mcp/compare/v1.9.0...v1.9.1) (2026-11-25)
 
 
