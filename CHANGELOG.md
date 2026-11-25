@@ -1,10 +1,3 @@
-## [1.9.1](https://github.com/bundleglobal/bundlesocial-mcp/compare/v1.9.0...v1.9.1) (2026-11-25)
-
-
-### Bug Fixes
-
-* check_setup speaks of the connection, not an API key, for OAuth sign-ins ([#10](https://github.com/bundleglobal/bundlesocial-mcp/issues/10)) ([cf41d61](https://github.com/bundleglobal/bundlesocial-mcp/commit/cf41d612efedc0ea69475e8d52c82cb012dd1db8))
-
 # [1.9.0](https://github.com/bundleglobal/bundlesocial-mcp/compare/v1.8.0...v1.9.0) (2026-11-25)
 
 
