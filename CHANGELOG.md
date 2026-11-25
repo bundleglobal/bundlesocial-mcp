@@ -1,3 +1,10 @@
+# [1.9.0](https://github.com/bundleglobal/bundlesocial-mcp/compare/v1.8.0...v1.9.0) (2026-11-25)
+
+
+### Features
+
+* announce the bundle.social logo, title and website in the server info ([#9](https://github.com/bundleglobal/bundlesocial-mcp/issues/9)) ([96be486](https://github.com/bundleglobal/bundlesocial-mcp/commit/96be4868810bd516c980a906a9acd6ce580b7218))
+
 # [1.8.0](https://github.com/bundleglobal/bundlesocial-mcp/compare/v1.7.0...v1.8.0) (2026-11-24)
 
 
