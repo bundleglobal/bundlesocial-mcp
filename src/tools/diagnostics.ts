@@ -1,7 +1,7 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import pkg from "../../package.json";
 import { type ServerContext, DASHBOARD_SOCIAL_ACCOUNTS_URL, listAllTeams } from "../client";
-import { errorSummary, jsonResult } from "../errors";
+import { errorSummary, jsonResult, normalizeError } from "../errors";
 import { registerTool } from "../register-tool";
 
 const VERSION: string = pkg.version;
@@ -21,7 +21,7 @@ export function registerDiagnosticsTools(server: McpServer, ctx: ServerContext):
     {
       title: "Check the bundle.social setup",
       description:
-        "Diagnose this MCP server's setup: API key present, API reachable, API key valid, organization API access, team resolution, connected integrations and posts quota. Always returns a structured diagnostic object ({ ok, checks: [...] }).",
+        "Diagnose this MCP server's setup: credentials present, API reachable, credentials valid, organization API access, team resolution, connected integrations and posts quota. Always returns a structured diagnostic object ({ ok, checks: [...] }).",
       annotations: { readOnlyHint: true, openWorldHint: true },
     },
     async () => {
@@ -30,9 +30,10 @@ export function registerDiagnosticsTools(server: McpServer, ctx: ServerContext):
         checks.push({ name, status, message, ...extra });
       const finish = () => jsonResult({ ok: checks.every((check) => check.status !== "fail"), mcpVersion: VERSION, node: process.version, checks });
 
-      // The server is only constructed with a non-empty API key, so by the time
-      // a tool runs the key is always present — record it for completeness.
-      add("api_key", "ok", "API key configured");
+      const oauth = ctx.auth === "oauth";
+      // The server is only constructed with credentials, so they are always present here.
+      if (oauth) add("connection", "ok", "Signed in to bundle.social");
+      else add("api_key", "ok", "API key configured");
 
       try {
         const health = await ctx.client.app.appGetHealth();
@@ -47,9 +48,18 @@ export function registerDiagnosticsTools(server: McpServer, ctx: ServerContext):
       try {
         const organization = await ctx.client.organization.organizationGetOrganization();
         organizationApiAccess = organization.apiAccess;
-        add("authentication", "ok", "API key is valid", { organizationId: organization.id, organizationName: organization.name ?? null });
+        add("authentication", "ok", oauth ? "Connection is active" : "API key is valid", { organizationId: organization.id, organizationName: organization.name ?? null });
       } catch (error) {
-        add("authentication", "fail", "API key was rejected by the API", { error: errorSummary(error) });
+        // The API's message says what to do (for a disconnected app: reconnect).
+        const reason = normalizeError(error).message;
+        add(
+          "authentication",
+          "fail",
+          oauth
+            ? `bundle.social rejected this connection: ${reason}`
+            : `API key was rejected by the API: ${reason}`,
+          { error: errorSummary(error) },
+        );
         return finish();
       }
       if (!ctx.defaultTeamId) {

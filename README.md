@@ -263,7 +263,7 @@ import { createServer } from "bundlesocial-mcp";
 const server = createServer({ apiKey, mode: "hosted", defaultTeamId });
 ```
 
-`createServer({ apiKey, apiUrl?, defaultTeamId?, mode?, clientId? })` builds the `McpServer` and is transport-agnostic. `mode: "hosted"` is for servers that run remotely: local file paths are refused (media and CSV sources must be public `https://` URLs), and CSV URLs are fetched without redirects and only from public addresses. Every request sends `x-bundle-client` (`mcp/<version>`, or `mcp-hosted/<version>` when hosted) so usage can be measured.
+`createServer({ apiKey, apiUrl?, defaultTeamId?, mode?, clientId?, auth?, readOnly? })` builds the `McpServer` and is transport-agnostic. `mode: "hosted"` is for servers that run remotely: local file paths are refused (media and CSV sources must be public `https://` URLs), and CSV URLs are fetched without redirects and only from public addresses. Every request sends `x-bundle-client` (`mcp/<version>`, or `mcp-hosted/<version>` when hosted) so usage can be measured. `auth: "oauth"` tells `check_setup` the user signed in through an OAuth connection rather than an API key, and `readOnly: true` registers only read-only tools.
 
 Every tool is annotated with a `title` and either `readOnlyHint` or `destructiveHint`; anything that writes, including creating a post, is marked destructive so clients ask before running it.
 

@@ -8,10 +8,13 @@ export const DASHBOARD_SOCIAL_ACCOUNTS_URL = "https://bundle.social/dashboard/ge
 
 /** stdio = local process on the user's machine; hosted = shared remote server (no local file access). */
 export type ServerMode = "stdio" | "hosted";
+/** How the user signed in: an API key, or an OAuth connection made by the hosted server. */
+export type AuthMethod = "api-key" | "oauth";
 
 export interface ServerContext {
   client: Bundlesocial;
   mode: ServerMode;
+  auth: AuthMethod;
   /** Team id from BUNDLESOCIAL_TEAM_ID / --team-id, if configured. */
   defaultTeamId?: string;
 }

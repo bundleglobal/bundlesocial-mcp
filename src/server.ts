@@ -1,6 +1,6 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import pkg from "../package.json";
-import { type ServerContext, type ServerMode, DEFAULT_API_URL, createClient } from "./client";
+import { type AuthMethod, type ServerContext, type ServerMode, DEFAULT_API_URL, createClient } from "./client";
 import { registerAllTools } from "./tools";
 
 export const VERSION: string = pkg.version;
@@ -14,6 +14,8 @@ export interface CreateServerOptions {
   mode?: ServerMode;
   /** Sent to the API as `x-bundle-client`. Default `mcp/<version>` (`mcp-hosted/<version>` when hosted). */
   clientId?: string;
+  /** "oauth" when `apiKey` is a credential minted for an OAuth connection; changes check_setup's wording. Default "api-key". */
+  auth?: AuthMethod;
   /** Register only tools marked `readOnlyHint` (a read-only OAuth connection). */
   readOnly?: boolean;
 }
@@ -70,6 +72,7 @@ export function createServer(options: CreateServerOptions): McpServer {
   const ctx: ServerContext = {
     client: createClient(options.apiKey, options.apiUrl ?? DEFAULT_API_URL, clientId),
     mode,
+    auth: options.auth ?? "api-key",
     defaultTeamId: options.defaultTeamId,
   };
   registerAllTools(options.readOnly ? readOnlyView(server) : server, ctx);
