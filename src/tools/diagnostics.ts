@@ -1,6 +1,6 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import pkg from "../../package.json";
-import { type ServerContext, DASHBOARD_SOCIAL_ACCOUNTS_URL, listAllTeams } from "../client";
+import { type ServerContext, DASHBOARD_SOCIAL_ACCOUNTS_URL, listAllTeams, teamSample } from "../client";
 import { errorSummary, jsonResult, normalizeError } from "../errors";
 import { registerTool } from "../register-tool";
 
@@ -89,9 +89,15 @@ export function registerDiagnosticsTools(server: McpServer, ctx: ServerContext):
         add("team", "fail", "Organization has no teams — create one in the dashboard");
       } else {
         // Several teams is normal (agencies run one per client): the agent names the team per request.
-        add("team", "ok", `${teams.length} teams, no default team. Name the team in each request; teamId accepts a team id or name.`, {
-          teams,
-        });
+        // Only a sample is listed so an organization with hundreds of teams doesn't flood the context.
+        const sample = teamSample(teams);
+        add(
+          "team",
+          "ok",
+          `${teams.length} teams, no default team. Name the team in each request; teamId accepts a team id or name.` +
+            (sample.totalTeams ? ` Showing ${sample.teams.length}; list_teams (with search) has the rest.` : ""),
+          sample,
+        );
       }
 
       if (teamId) {
