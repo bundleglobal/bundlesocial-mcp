@@ -92,6 +92,7 @@ Team-scoped tools take an optional `teamId`, either a team id or the exact team 
 | Tool | Description |
 |---|---|
 | `upload_media` | Upload an image/video/document from a public URL (or local path in stdio mode). Local files >90 MB use the large-upload flow automatically (.jpg/.jpeg/.png/.gif/.mp4/.pdf only above that size). Returns the upload object — pass its `id` to `create_post`/`schedule_post` via `data` (e.g. `{"TWITTER":{"text":"hi","uploadIds":["<id>"]}}`). |
+| `create_upload_link` / `get_upload_link` | A link the user opens in their browser to add files (JPG, PNG, GIF, MP4, MOV, PDF, up to 5 GB) without signing in, for chats that can't send a file (claude.ai, ChatGPT). `get_upload_link` returns the status and the upload ids. |
 | `list_media` / `get_media` | List / fetch media uploads (filter by type and USED/UNUSED). |
 | `delete_media` / `delete_media_many` | Delete one or several uploads (destructive). |
 | `init_large_upload` / `finalize_large_upload` | Direct upload of any file up to 5 GB — `init` returns a signed PUT `url` + `path`; PUT the bytes there, then `finalize`. The way to send local files to the hosted server; in stdio mode `upload_media` with a local path does it for you. |
@@ -263,7 +264,7 @@ import { createServer } from "bundlesocial-mcp";
 const server = createServer({ apiKey, mode: "hosted", defaultTeamId });
 ```
 
-`createServer({ apiKey, apiUrl?, defaultTeamId?, mode?, clientId?, auth?, readOnly? })` builds the `McpServer` and is transport-agnostic. `mode: "hosted"` is for servers that run remotely: local file paths are refused (media and CSV sources must be public `https://` URLs), and CSV URLs are fetched without redirects and only from public addresses. Every request sends `x-bundle-client` (`mcp/<version>`, or `mcp-hosted/<version>` when hosted) so usage can be measured. `auth: "oauth"` tells `check_setup` the user signed in through an OAuth connection rather than an API key, and `readOnly: true` registers only read-only tools.
+`createServer({ apiKey, apiUrl?, defaultTeamId?, mode?, clientId?, auth?, readOnly?, apiActions? })` builds the `McpServer` and is transport-agnostic. `mode: "hosted"` is for servers that run remotely: local file paths are refused (media and CSV sources must be public `https://` URLs), and CSV URLs are fetched without redirects and only from public addresses. Every request sends `x-bundle-client` (`mcp/<version>`, or `mcp-hosted/<version>` when hosted) so usage can be measured. `auth: "oauth"` tells `check_setup` the user signed in through an OAuth connection rather than an API key, `readOnly: true` registers only read-only tools, and `apiActions: false` leaves out `search_api_actions` / `call_api_read` / `call_api_action` for directories that don't accept generic API tools. Every tool carries a `title` and explicit `readOnlyHint`, `destructiveHint` and `openWorldHint`.
 
 Every tool is annotated with a `title` and either `readOnlyHint` or `destructiveHint`; anything that writes, including creating a post, is marked destructive so clients ask before running it.
 

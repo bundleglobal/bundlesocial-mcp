@@ -8,6 +8,47 @@ import { registerTool } from "../register-tool";
 export function registerMediaTools(server: McpServer, ctx: ServerContext): void {
   registerTool(
     server,
+    "create_upload_link",
+    {
+      title: "Create a link to upload a file",
+      description:
+        "Create a link the user opens in their browser to add files (JPG, PNG, GIF, MP4, MOV or PDF, up to 5 GB each) to a team's bundle.social media library, without signing in. Use it when the user has a file on their device that this chat can't send, for example a photo they want to post. Give the user the returned url, then call get_upload_link with the returned id to get the upload ids for create_post or schedule_post. The url is shown only once.",
+      inputSchema: {
+        teamId: teamIdSchema,
+        maxFiles: z.number().int().min(1).max(10).optional().describe("How many files the user can add, 1 by default."),
+        expiresIn: z.number().int().min(5).max(1440).optional().describe("Minutes the link stays open, 60 by default."),
+      },
+      annotations: { destructiveHint: true },
+    },
+    async ({ teamId, maxFiles, expiresIn }) => {
+      const id = await resolveTeamId(ctx, teamId);
+      return jsonResult(
+        await ctx.client.request.request({
+          method: "POST",
+          url: "/api/v1/upload/link",
+          body: { teamId: id, maxFiles, expiresIn },
+          mediaType: "application/json",
+        }),
+      );
+    },
+  );
+
+  registerTool(
+    server,
+    "get_upload_link",
+    {
+      title: "Check an upload link",
+      description:
+        "Status of a link made with create_upload_link: WAITING (the user hasn't added all files yet), COMPLETED or EXPIRED, with the ids of the files added so far. Pass those ids to create_post or schedule_post.",
+      inputSchema: { id: z.string().min(1).describe("The id returned by create_upload_link.") },
+      annotations: { readOnlyHint: true },
+    },
+    async ({ id }) =>
+      jsonResult(await ctx.client.request.request({ method: "GET", url: "/api/v1/upload/link/{id}", path: { id } })),
+  );
+
+  registerTool(
+    server,
     "upload_media",
     {
       title: "Upload media",
