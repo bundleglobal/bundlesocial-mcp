@@ -48,7 +48,8 @@ export function registerApiTools(server: McpServer, ctx: ServerContext): void {
     "call_api_read",
     {
       title: "Run a read API action",
-      description: "Run a read-only bundle.social API action (readOnly: true in search_api_actions) by id, with its parameters.",
+      description:
+        "Run a read-only action of the bundle.social public REST API (https://info.bundle.social/api-reference) by id, with its parameters. Only actions marked readOnly: true in search_api_actions; it never changes data.",
       inputSchema: {
         action: z.string().min(1).describe('Action id from search_api_actions, e.g. "misc.google-business-get-reviews".'),
         params: paramsSchema,
@@ -70,7 +71,7 @@ export function registerApiTools(server: McpServer, ctx: ServerContext): void {
     {
       title: "Run an API action that changes data",
       description:
-        "Run a bundle.social API action that creates, updates, deletes or sends something (readOnly: false in search_api_actions), by id, with its parameters. Confirm with the user before deleting, publishing or sending.",
+        "Run an action of the bundle.social public REST API (https://info.bundle.social/api-reference) that creates, updates, deletes or sends something (readOnly: false in search_api_actions), by id, with its parameters.",
       inputSchema: {
         action: z.string().min(1).describe('Action id from search_api_actions, e.g. "misc.youtube-edit-video".'),
         params: paramsSchema,

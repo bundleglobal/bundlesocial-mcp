@@ -11,6 +11,7 @@ import { createServer } from "../src/server";
 
 const mocks = vi.hoisted(() => {
   const client = {
+    request: { request: vi.fn() },
     app: { appGetHealth: vi.fn() },
     organization: {
       organizationGetOrganization: vi.fn(),
@@ -150,10 +151,12 @@ async function connect(options?: {
   mode?: "stdio" | "hosted";
   readOnly?: boolean;
   auth?: "api-key" | "oauth";
+  apiActions?: boolean;
 }) {
   const server = createServer({
     apiKey: "test-key",
     auth: options?.auth,
+    apiActions: options?.apiActions,
     mode: options?.mode,
     readOnly: options?.readOnly,
     defaultTeamId: options?.defaultTeamId === null ? undefined : options?.defaultTeamId ?? "team_test",
@@ -264,6 +267,8 @@ describe("tool registry", () => {
         "act_on_imported_comment",
         // media
         "upload_media",
+        "create_upload_link",
+        "get_upload_link",
         "list_media",
         "get_media",
         "delete_media",
@@ -559,6 +564,46 @@ describe("list_posts / get_post / delete_post", () => {
     const { json, isError } = await callTool(client, "get_post", { id: "missing" });
     expect(isError).toBe(true);
     expect(json).toMatchObject({ error: { code: "HTTP_404", message: "Post not found" } });
+  });
+});
+
+describe("directory requirements", () => {
+  it("gives every tool a title and all three hints as explicit booleans", async () => {
+    const client = await connect();
+    const { tools } = await client.listTools();
+    for (const tool of tools) {
+      expect(tool.title, tool.name).toBeTruthy();
+      for (const hint of ["readOnlyHint", "destructiveHint", "openWorldHint"] as const) {
+        expect(typeof tool.annotations?.[hint], `${tool.name}.${hint}`).toBe("boolean");
+      }
+      if (tool.annotations?.readOnlyHint) expect(tool.annotations.destructiveHint, tool.name).toBe(false);
+    }
+  });
+
+  it("drops the generic API tools when apiActions is false", async () => {
+    const client = await connect({ apiActions: false });
+    const names = (await client.listTools()).tools.map((tool) => tool.name);
+    expect(names).not.toContain("call_api_action");
+    expect(names).not.toContain("call_api_read");
+    expect(names).not.toContain("search_api_actions");
+    expect(names).toContain("create_post");
+  });
+});
+
+describe("upload links", () => {
+  it("creates a link for the resolved team and reads its status", async () => {
+    sdk.request.request.mockResolvedValueOnce({ id: "link_1", status: "WAITING", url: "https://bundle.social/upload#t" });
+    const client = await connect();
+    const { json } = await callTool(client, "create_upload_link", { maxFiles: 2 });
+    expect(json).toMatchObject({ id: "link_1", status: "WAITING" });
+    expect(sdk.request.request).toHaveBeenCalledWith(
+      expect.objectContaining({ method: "POST", url: "/api/v1/upload/link", body: { teamId: "team_test", maxFiles: 2, expiresIn: undefined } }),
+    );
+
+    sdk.request.request.mockResolvedValueOnce({ id: "link_1", status: "COMPLETED", uploadIds: ["up_1"] });
+    const status = await callTool(client, "get_upload_link", { id: "link_1" });
+    expect(status.json).toMatchObject({ uploadIds: ["up_1"] });
+    expect(sdk.request.request).toHaveBeenLastCalledWith({ method: "GET", url: "/api/v1/upload/link/{id}", path: { id: "link_1" } });
   });
 });
 

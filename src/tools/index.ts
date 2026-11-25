@@ -14,7 +14,7 @@ import { registerDiagnosticsTools } from "./diagnostics";
 import { registerPlatformReferenceTools } from "./platform-reference";
 import { registerApiTools } from "./api";
 
-export function registerAllTools(server: McpServer, ctx: ServerContext): void {
+export function registerAllTools(server: McpServer, ctx: ServerContext, options: { apiActions: boolean }): void {
   registerOrganizationTools(server, ctx);
   registerTeamTools(server, ctx);
   registerIntegrationTools(server, ctx);
@@ -27,5 +27,5 @@ export function registerAllTools(server: McpServer, ctx: ServerContext): void {
   registerPostCsvTools(server, ctx);
   registerIntegrationToolHelpers(server, ctx);
   registerDiagnosticsTools(server, ctx);
-  registerApiTools(server, ctx);
+  if (options.apiActions) registerApiTools(server, ctx);
 }

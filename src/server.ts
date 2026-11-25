@@ -18,6 +18,11 @@ export interface CreateServerOptions {
   auth?: AuthMethod;
   /** Register only tools marked `readOnlyHint` (a read-only OAuth connection). */
   readOnly?: boolean;
+  /**
+   * Register search_api_actions, call_api_read and call_api_action, which reach the whole API. Default true.
+   * Directories that don't accept generic API tools (ChatGPT) can turn them off.
+   */
+  apiActions?: boolean;
 }
 
 // Drops every tool that isn't marked read-only; the API enforces the same rule.
@@ -45,7 +50,7 @@ const INSTRUCTIONS =
   "Errors come back as { error: { code, message, details } } with isError: true.";
 
 const HOSTED_NOTE =
-  " This server runs remotely and cannot read local file paths: media and CSV sources must be public https:// URLs. To send a file from the user's machine, a client with a shell can call init_large_upload, PUT the bytes to the returned url (for example with curl --upload-file), then call finalize_large_upload.";
+  " This server runs remotely and cannot read local file paths: media and CSV sources must be public https:// URLs. For a file on the user's device, create_upload_link returns a link the user opens to add it; a client with a shell can instead call init_large_upload, PUT the bytes to the returned url (for example with curl --upload-file), then call finalize_large_upload.";
 
 /** Build an MCP server exposing the bundle.social tools. Transport-agnostic. */
 export function createServer(options: CreateServerOptions): McpServer {
@@ -75,6 +80,6 @@ export function createServer(options: CreateServerOptions): McpServer {
     auth: options.auth ?? "api-key",
     defaultTeamId: options.defaultTeamId,
   };
-  registerAllTools(options.readOnly ? readOnlyView(server) : server, ctx);
+  registerAllTools(options.readOnly ? readOnlyView(server) : server, ctx, { apiActions: options.apiActions ?? true });
   return server;
 }
